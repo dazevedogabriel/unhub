@@ -29,6 +29,9 @@ pub struct Config {
     /// pid ("c08f") -> código HID sentinela ("104") -> gatilho
     #[serde(default)]
     pub triggers: BTreeMap<String, BTreeMap<String, Trigger>>,
+    /// Código do idioma escolhido (p.ex. "en"); ausente = seguir o Windows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
 }
 
 pub fn path() -> PathBuf {
@@ -84,7 +87,7 @@ impl Config {
         }
         match SENTINELS.into_iter().find(|c| !used.contains(c)) {
             Some(c) => Ok(c),
-            None => bail!("limite de 12 botões com macro atingido"),
+            None => bail!(tr!("err.macro_limit")),
         }
     }
 

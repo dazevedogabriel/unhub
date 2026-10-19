@@ -29,7 +29,8 @@ impl std::fmt::Display for HidppError {
         const NAMES: [&str; 10] = ["?", "UNKNOWN", "INVALID_ARGUMENT", "OUT_OF_RANGE", "HW_ERROR",
             "LOGITECH_INTERNAL", "INVALID_FEATURE_INDEX", "INVALID_FUNCTION_ID", "BUSY", "UNSUPPORTED"];
         let name = NAMES.get(self.code as usize).unwrap_or(&"?");
-        write!(f, "HID++ erro {} ({name}) feature_idx=0x{:02x} fn={}", self.code, self.feature_index, self.function)
+        let msg = tr!("err.hidpp", code = self.code, name = name, index = format!("{:02x}", self.feature_index), function = self.function);
+        f.write_str(&msg)
     }
 }
 
@@ -60,7 +61,7 @@ impl Device {
 
     pub fn request(&self, feature_index: u8, function: u8, params: &[u8]) -> Result<[u8; 16]> {
         if params.len() > 16 {
-            bail!("no máximo 16 bytes de parâmetro");
+            bail!(tr!("err.params"));
         }
         let fn_sw = (function << 4) | SOFTWARE_ID;
         let mut msg = [0u8; 20];
@@ -86,7 +87,7 @@ impl Device {
                 return Err(HidppError { code: r[5], feature_index, function }.into());
             }
         }
-        Err(anyhow!("sem resposta (feature_idx=0x{feature_index:02x} fn={function})"))
+        Err(anyhow!(tr!("err.no_response", index = format!("{feature_index:02x}"), function = function)))
     }
 
     /// Root.getFeature (fn 0). None se o dispositivo não suporta.
@@ -101,7 +102,7 @@ impl Device {
     }
 
     fn dpi_feature(&mut self) -> Result<u8> {
-        self.feature_index(FEATURE_ADJUSTABLE_DPI)?.ok_or_else(|| anyhow!("sem a feature 0x2201"))
+        self.feature_index(FEATURE_ADJUSTABLE_DPI)?.ok_or_else(|| anyhow!(tr!("err.no_dpi_feature")))
     }
 
     /// Lê a lista do sensor 0: valores ou faixas (0xE000|passo) até um zero.
@@ -123,7 +124,7 @@ impl Device {
             }
         }
         if values.is_empty() {
-            bail!("lista de DPI vazia");
+            bail!(tr!("err.dpi_empty"));
         }
         if step.is_some() && values.len() >= 2 {
             return Ok((values[0], *values.last().unwrap(), step));

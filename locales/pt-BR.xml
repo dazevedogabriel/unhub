@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  UNHUB — Português (Brasil)
+
+  Para criar uma tradução: copie este arquivo, troque `code` e `name` em
+  <language>, traduza só o texto entre as tags (nunca a `key`) e salve como
+  <código>.xml em %APPDATA%\UNHUB\locales (ou numa pasta "locales" ao lado do
+  unhub.exe). O idioma aparece no seletor da barra de título na próxima vez
+  que o UNHUB abrir.
+
+  {nome} é trocado por um valor quando o texto aparece: mantenha.
+  <plural>: <one> quando o número é 1, <other> nos demais casos.
+-->
+<language code="pt-BR" name="Português (Brasil)">
+
+  <!-- Geral -->
+  <string key="app.tagline">sem G HUB</string>
+  <string key="lang.title">Idioma</string>
+  <string key="lang.auto">Automático ({name})</string>
+
+  <!-- Navegação e cabeçalho -->
+  <string key="nav.buttons">Atalhos</string>
+  <string key="nav.buttons_sub">Atribua uma ação a cada botão</string>
+  <string key="nav.macros">Macros</string>
+  <string key="nav.macros_sub">Sequências executadas pelo agente</string>
+  <string key="nav.dpi">DPI</string>
+  <string key="nav.dpi_sub">Níveis de sensibilidade do sensor</string>
+  <string key="nav.light">Iluminação</string>
+  <string key="nav.light_sub">Efeitos de LED por zona</string>
+  <string key="header.apply">Aplicar no mouse</string>
+  <string key="header.restore">Restaurar original</string>
+  <string key="header.reload">Recarregar do mouse</string>
+  <string key="header.unapplied">não aplicado</string>
+  <string key="busy.reading">Lendo o mouse…</string>
+  <string key="busy.writing">Gravando no mouse…</string>
+  <string key="busy.restoring">Restaurando…</string>
+
+  <!-- Cartão do dispositivo -->
+  <string key="device.connected">CONECTADO</string>
+  <string key="device.searching">PROCURANDO</string>
+  <string key="device.disconnected">DESCONECTADO</string>
+  <string key="device.none">Nenhum mouse</string>
+  <string key="device.mode">MODO</string>
+  <string key="device.onboard">Onboard</string>
+  <string key="device.host">Host</string>
+
+  <!-- Agente de macros -->
+  <string key="agent.title">AGENTE DE MACROS</string>
+  <string key="agent.running">Em execução</string>
+  <string key="agent.stopped">Parado</string>
+  <string key="agent.stopped_hint">Há botões com macro: sem o agente eles não fazem nada.</string>
+  <string key="agent.start">Iniciar</string>
+  <string key="agent.stop">Parar</string>
+  <string key="agent.started_toast">Agente de macros iniciado (ícone na bandeja)</string>
+  <string key="agent.stopped_toast">Agente de macros parado</string>
+  <string key="agent.start_failed">Não foi possível iniciar o agente: {error}</string>
+  <string key="agent.autostart">Iniciar com o Windows</string>
+
+  <!-- Avisos -->
+  <string key="banner.ghub">O G HUB está aberto: ele assume o controle do mouse e ignora o perfil onboard. Feche-o (inclusive na bandeja).</string>
+  <string key="banner.legacy">O agente do LGLITE (Python) está aberto junto: feche-o pelo ícone da bandeja para não tocar macros em dobro.</string>
+  <string key="toast.save_failed">Não foi possível salvar a configuração: {error}</string>
+  <string key="toast.disconnected">Mouse desconectado</string>
+  <string key="toast.reloaded">Configuração lida do mouse</string>
+  <string key="toast.applied">Perfil gravado no {name}</string>
+  <string key="toast.applied_agent">Perfil gravado no {name} · agente de macros iniciado</string>
+  <string key="toast.applied_agent_failed">Perfil gravado, mas o agente não iniciou: {error}</string>
+  <string key="toast.restored">Perfil original restaurado ({file})</string>
+  <string key="empty.searching">Procurando o mouse…</string>
+  <string key="empty.searching_body">Conecte um mouse Logitech G com fio.</string>
+  <string key="empty.missing">Nenhum mouse encontrado</string>
+  <string key="empty.retry">Conecte o mouse — o UNHUB tenta de novo sozinho.</string>
+  <string key="empty.reading">Lendo o perfil…</string>
+
+  <!-- Confirmações -->
+  <string key="dialog.ok">OK</string>
+  <string key="dialog.cancel">Cancelar</string>
+  <string key="dialog.save">Salvar</string>
+  <string key="dialog.add">Adicionar</string>
+  <string key="confirm.ghub_title">G HUB aberto</string>
+  <string key="confirm.ghub_body">O G HUB está aberto e vai sobrepor esta configuração. Feche-o (inclusive na bandeja) ou grave mesmo assim.</string>
+  <string key="confirm.ghub_ok">Gravar mesmo assim</string>
+  <string key="confirm.restore_body">Voltar ao perfil que estava no mouse antes do primeiro uso do UNHUB (ou do LGLITE)? Isso grava direto no mouse.</string>
+  <string key="confirm.restore_ok">Restaurar</string>
+  <string key="confirm.reload_title">Recarregar</string>
+  <string key="confirm.reload_body">Descartar as alterações não aplicadas?</string>
+  <string key="confirm.discard">Descartar</string>
+  <string key="confirm.quit">Sair</string>
+  <string key="confirm.quit_body">Sair sem aplicar as alterações no mouse?</string>
+  <string key="confirm.left_title">Tirar o clique esquerdo?</string>
+  <string key="confirm.left_body">Você está tirando o clique esquerdo do G1. Garanta que outro botão faça o clique esquerdo antes de aplicar.</string>
+  <string key="confirm.continue">Continuar</string>
+  <string key="confirm.delete_title">Excluir macro</string>
+  <string key="confirm.delete_body">Excluir a macro “{name}”?</string>
+  <string key="confirm.delete_used">Ela está atribuída a: {buttons}. Esses botões voltarão ao padrão (aplique para gravar).</string>
+
+  <!-- Página Atalhos -->
+  <string key="buttons.layer_normal">Normal</string>
+  <string key="buttons.layer_gshift">G-Shift</string>
+  <string key="buttons.hint">Clique num botão do mouse ou na lista.</string>
+  <string key="buttons.hint_gshift">Camada ativa enquanto o botão G-Shift estiver pressionado.</string>
+  <string key="buttons.col_id">ID</string>
+  <string key="buttons.col_button">BOTÃO</string>
+  <string key="buttons.col_action">AÇÃO</string>
+  <string key="buttons.gshift_suffix">{button} (G-Shift)</string>
+  <string key="buttons.reset">Voltar ao padrão</string>
+  <string key="buttons.macro">Macro: {name}</string>
+  <string key="buttons.tag_macro">MACRO</string>
+  <string key="buttons.tag_mouse">MOUSE</string>
+  <string key="buttons.tag_key">TECLA</string>
+  <string key="buttons.tag_media">MÍDIA</string>
+  <string key="buttons.tag_shift">SHIFT</string>
+  <string key="buttons.tag_dpi">DPI</string>
+  <string key="buttons.tag_fw">FW</string>
+  <string key="buttons.tag_raw">RAW</string>
+  <string key="buttons.sub_key">Atalho gravado no mouse</string>
+  <string key="buttons.sub_shift">Camada G-Shift enquanto pressionado</string>
+  <string key="buttons.sub_fw">Função do firmware</string>
+  <string key="buttons.sub_raw">Formato desconhecido, preservado</string>
+  <string key="buttons.group_mouse">MOUSE</string>
+  <string key="buttons.group_dpi">DPI</string>
+  <string key="buttons.group_macro">MACRO</string>
+  <string key="buttons.group_shortcut">ATALHO DE TECLADO</string>
+  <string key="buttons.group_media">MÍDIA</string>
+  <string key="buttons.group_other">OUTROS</string>
+  <string key="buttons.no_macros">Crie uma macro na aba Macros.</string>
+  <string key="buttons.press_combo">Pressione a combinação…</string>
+  <string key="buttons.click_to_record">Clique e pressione uma tecla</string>
+  <string key="buttons.stored_note">Gravado no mouse: funciona sem o UNHUB aberto.</string>
+
+  <!-- Nomes dos botões e zonas -->
+  <string key="btn.left">Esquerdo</string>
+  <string key="btn.right">Direito</string>
+  <string key="btn.middle">Meio (roda)</string>
+  <string key="btn.rear">Lateral traseiro</string>
+  <string key="btn.front">Lateral dianteiro</string>
+  <string key="btn.dpi">Botão de DPI</string>
+  <string key="btn.n">Botão {n}</string>
+  <string key="zone.primary">Primária</string>
+  <string key="zone.logo">Logo</string>
+  <string key="zone.n">Zona {n}</string>
+
+  <!-- Ações de botão -->
+  <string key="binding.disabled">Desativado</string>
+  <string key="binding.raw">Outro ({bytes}) — mantido</string>
+  <string key="mouse.left">Clique esquerdo</string>
+  <string key="mouse.right">Clique direito</string>
+  <string key="mouse.middle">Clique do meio</string>
+  <string key="mouse.back">Voltar</string>
+  <string key="mouse.forward">Avançar</string>
+  <string key="mouse.n">Botão do mouse {n}</string>
+  <string key="special.scroll_left">Rolagem para a esquerda</string>
+  <string key="special.scroll_right">Rolagem para a direita</string>
+  <string key="special.dpi_up">DPI +</string>
+  <string key="special.dpi_down">DPI −</string>
+  <string key="special.dpi_cycle">Ciclo de DPI</string>
+  <string key="special.dpi_default">DPI padrão</string>
+  <string key="special.dpi_shift">DPI shift (segurar)</string>
+  <string key="special.profile_next">Próximo perfil</string>
+  <string key="special.profile_prev">Perfil anterior</string>
+  <string key="special.profile_cycle">Ciclo de perfis</string>
+  <string key="special.gshift">G-Shift (segurar)</string>
+  <string key="special.unknown">Especial 0x{code}</string>
+
+  <!-- Teclas e mídia -->
+  <string key="key.none">(nenhuma tecla)</string>
+  <string key="key.space">Espaço</string>
+  <string key="key.right">Direita</string>
+  <string key="key.left">Esquerda</string>
+  <string key="key.down">Baixo</string>
+  <string key="key.up">Cima</string>
+  <string key="media.play_pause">Play/Pause</string>
+  <string key="media.next">Próxima faixa</string>
+  <string key="media.prev">Faixa anterior</string>
+  <string key="media.stop">Parar</string>
+  <string key="media.vol_up">Volume +</string>
+  <string key="media.vol_down">Volume -</string>
+  <string key="media.mute">Mudo</string>
+  <string key="media.calculator">Calculadora</string>
+  <string key="media.explorer">Explorador</string>
+  <string key="media.browser_home">Navegador: início</string>
+  <string key="media.browser_back">Navegador: voltar</string>
+  <string key="media.browser_forward">Navegador: avançar</string>
+
+  <!-- Macros: modelo -->
+  <string key="mtype.repeat">Repetir enquanto pressionado</string>
+  <string key="mtype.simple">Executar uma vez</string>
+  <string key="mtype.toggle">Alternar (liga/desliga)</string>
+  <string key="mtype.sequence">Pressionar e soltar</string>
+  <string key="mtype.repeat_title">Enquanto pressionado</string>
+  <string key="mtype.repeat_desc">Repete as ações enquanto o botão estiver pressionado.</string>
+  <string key="mtype.simple_title">Ao pressionar</string>
+  <string key="mtype.simple_desc">Executa a sequência uma vez a cada clique.</string>
+  <string key="mtype.toggle_title">Em loop</string>
+  <string key="mtype.toggle_desc">Um clique inicia o loop, outro clique para.</string>
+  <string key="mtype.sequence_title">Ao pressionar / ao soltar</string>
+  <string key="mtype.sequence_desc">Ações ao pressionar, em loop enquanto segura, e ao soltar.</string>
+  <string key="list.actions">Ações</string>
+  <string key="list.press">Ao pressionar</string>
+  <string key="list.held">Enquanto segura</string>
+  <string key="list.release">Ao soltar</string>
+  <plural key="macro.count"><one>{n} ação</one><other>{n} ações</other></plural>
+  <string key="macro.default_name">Macro</string>
+  <string key="macro.new_name">Nova macro</string>
+  <string key="macro.copy">{name} (cópia)</string>
+  <string key="macro.ghub_name">Macro do G HUB</string>
+  <string key="macro.unsupported">componente não suportado ignorado: {keys}</string>
+  <string key="wheel.up">Rolar para cima</string>
+  <string key="wheel.down">Rolar para baixo</string>
+  <string key="wheel.left">Rolar para a esquerda</string>
+  <string key="wheel.right">Rolar para a direita</string>
+  <string key="step.key">Tecla {key}</string>
+  <string key="step.wait">Aguardar {ms} ms</string>
+
+  <!-- Página Macros -->
+  <string key="macros.library">BIBLIOTECA</string>
+  <string key="macros.new">+ Nova</string>
+  <string key="macros.duplicate">Duplicar</string>
+  <string key="macros.delete">Excluir</string>
+  <string key="macros.import">Importar do G HUB</string>
+  <string key="macros.empty_title">Nenhuma macro ainda</string>
+  <string key="macros.empty_body">Crie uma em “+ Nova” ou importe as suas do G HUB.</string>
+  <string key="macros.name">NOME</string>
+  <string key="macros.type">TIPO</string>
+  <string key="macros.default_delay">ATRASO PADRÃO</string>
+  <string key="macros.record">Gravar teclas</string>
+  <string key="macros.recording">Gravando… {n} · parar</string>
+  <string key="macros.real_delays">atrasos reais</string>
+  <string key="macros.real_delays_tip">Grava também o tempo entre as teclas</string>
+  <string key="macros.no_steps">Nenhuma ação. Adicione abaixo ou grave.</string>
+  <string key="macros.add">ADICIONAR</string>
+  <string key="macros.ghub_file">settings.db do G HUB</string>
+  <string key="macros.import_failed">Não foi possível ler o G HUB: {error}</string>
+  <plural key="macros.imported"><one>{n} macro importada.</one><other>{n} macros importadas.</other></plural>
+  <plural key="macros.import_skipped"><one>{n} já existia e foi ignorada.</one><other>{n} já existiam e foram ignoradas.</other></plural>
+  <string key="macros.import_none">Nenhuma macro criada por você foi encontrada no G HUB.</string>
+  <string key="macros.import_warnings">Avisos:</string>
+
+  <!-- Adicionar/editar ação -->
+  <string key="steps.key">Tecla</string>
+  <string key="steps.text">Texto</string>
+  <string key="steps.click">Clique</string>
+  <string key="steps.wheel">Rolagem</string>
+  <string key="steps.delay">Atraso</string>
+  <string key="steps.media">Mídia</string>
+  <string key="steps.launch">Programa</string>
+  <string key="stepdlg.key_add">Adicionar tecla</string>
+  <string key="stepdlg.key_edit">Trocar tecla</string>
+  <string key="stepdlg.text">Texto a digitar</string>
+  <string key="stepdlg.click">Clique do mouse</string>
+  <string key="stepdlg.launch">Abrir programa</string>
+  <string key="stepdlg.press_key">Pressione a tecla…</string>
+  <string key="stepdlg.key_hint">Clique na caixa e pressione a tecla ou combinação. Adiciona pressionar e soltar; modificadores envolvem a tecla.</string>
+  <string key="stepdlg.key_hint_edit">Clique na caixa e pressione a nova tecla. O sentido (pressionar/soltar) é mantido.</string>
+  <string key="stepdlg.down">↓ Pressionar</string>
+  <string key="stepdlg.up">↑ Soltar</string>
+  <string key="stepdlg.text_label">TEXTO</string>
+  <string key="stepdlg.text_hint">Digitado como Unicode — funciona com acentos e emoji. Quebras de linha viram Enter.</string>
+  <string key="stepdlg.button">BOTÃO</string>
+  <string key="stepdlg.sense">SENTIDO</string>
+  <string key="stepdlg.click_hint">Adiciona pressionar e soltar.</string>
+  <string key="stepdlg.direction">DIREÇÃO</string>
+  <string key="stepdlg.amount">PASSOS</string>
+  <string key="stepdlg.duration">DURAÇÃO</string>
+  <string key="stepdlg.action">AÇÃO</string>
+  <string key="stepdlg.program">PROGRAMA</string>
+  <string key="stepdlg.args">ARGUMENTOS (OPCIONAL)</string>
+  <string key="stepdlg.path_hint">C:\caminho\programa.exe</string>
+  <string key="stepdlg.browse">Procurar…</string>
+  <string key="stepdlg.filter_programs">Programas</string>
+  <string key="stepdlg.filter_all">Todos</string>
+
+  <!-- Página DPI -->
+  <string key="dpi.current">DPI atual</string>
+  <string key="dpi.range">{lo} — {hi} · passos de {step} · até 5 níveis</string>
+  <string key="dpi.col_active">ATIVO</string>
+  <string key="dpi.col_level">NÍVEL</string>
+  <string key="dpi.col_range">FAIXA</string>
+  <string key="dpi.col_default">PADRÃO</string>
+  <string key="dpi.col_shift">SHIFT</string>
+  <string key="dpi.in_use">Em uso</string>
+  <string key="dpi.test">Testar agora</string>
+  <string key="dpi.rate">TAXA DE RELATÓRIO</string>
+  <string key="dpi.hint">O botão de ciclo percorre os níveis ativos. Shift é o DPI usado enquanto um botão com “DPI shift (segurar)” estiver pressionado. Testar muda o DPI na hora, sem gravar.</string>
+
+  <!-- Página Iluminação -->
+  <string key="light.off">Desligado</string>
+  <string key="light.fixed">Fixo</string>
+  <string key="light.breath">Respiração</string>
+  <string key="light.cycle">Ciclo de cores</string>
+  <string key="light.other">Outro (0x{code})</string>
+  <string key="light.sync">Mesma configuração em todas as zonas</string>
+  <string key="light.follows">{zone} segue a {main}</string>
+  <string key="light.note">Gravado na memória do mouse junto com o perfil. Zonas na ordem informada pelo mouse (feature 0x8070).</string>
+  <string key="light.zone">ZONA</string>
+  <string key="light.effect">Efeito</string>
+  <string key="light.color">Cor</string>
+  <string key="light.speed">Ciclo</string>
+  <string key="light.brightness">Brilho</string>
+
+  <!-- Bandeja -->
+  <string key="tray.open">Abrir UNHUB</string>
+  <string key="tray.pause">Pausar macros</string>
+  <string key="tray.reload">Recarregar configuração</string>
+  <string key="tray.quit">Sair</string>
+  <plural key="tray.active"><one>UNHUB — macros ativas ({n} botão)</one><other>UNHUB — macros ativas ({n} botões)</other></plural>
+  <plural key="tray.paused"><one>UNHUB — macros pausadas ({n} botão)</one><other>UNHUB — macros pausadas ({n} botões)</other></plural>
+
+  <!-- Saída da opção status no terminal -->
+  <string key="cli.model">modelo</string>
+  <string key="cli.mode">modo</string>
+  <string key="cli.sector">setor</string>
+  <string key="cli.dpi">atual {current} · faixa {lo}–{hi} passo {step}</string>
+  <string key="cli.levels">níveis</string>
+  <string key="cli.levels_value">{levels} padrão {default} shift {shift}</string>
+  <string key="cli.rate">taxa</string>
+  <string key="cli.light">luz</string>
+  <string key="cli.agent">agente</string>
+  <string key="cli.error">erro: {error}</string>
+
+  <!-- Erros -->
+  <string key="err.no_device">nenhum mouse Logitech G compatível encontrado</string>
+  <string key="err.disconnected">mouse desconectado</string>
+  <string key="err.no_backup">nenhum backup encontrado para este mouse</string>
+  <string key="err.macro_limit">limite de 12 botões com macro atingido</string>
+  <string key="err.registry">não foi possível gravar no registro (erro {code})</string>
+  <string key="err.hook">não foi possível instalar o hook de teclado</string>
+  <string key="err.agent_crashed">O agente de macros parou: {error}</string>
+  <string key="err.window">Não foi possível abrir a janela: {error}</string>
+  <string key="err.no_onboard">este dispositivo não tem perfis onboard (0x8100)</string>
+  <string key="err.no_profile">nenhum perfil onboard habilitado; restaure o mouse pelo G HUB uma vez</string>
+  <string key="err.sector_crc">CRC inválido no setor 0x{sector}</string>
+  <string key="err.crc_refuse">CRC inválido; recusando gravar</string>
+  <string key="err.verify">a verificação após a gravação falhou</string>
+  <string key="err.sector_size">tamanho de setor inválido</string>
+  <string key="err.sector_unexpected">tamanho de setor inesperado: {size}</string>
+  <string key="err.no_response">sem resposta (feature_idx=0x{index} fn={function})</string>
+  <string key="err.hidpp">HID++ erro {code} ({name}) feature_idx=0x{index} fn={function}</string>
+  <string key="err.params">no máximo 16 bytes de parâmetro</string>
+  <string key="err.no_dpi_feature">sem a feature 0x2201</string>
+  <string key="err.dpi_empty">lista de DPI vazia</string>
+  <string key="err.rate">taxa deve ser 125, 250, 500 ou 1000 Hz</string>
+  <string key="err.dpi_required">pelo menos um nível de DPI é obrigatório</string>
+  <string key="err.dpi_index">índice de DPI fora da tabela</string>
+  <string key="err.zone">zona inválida</string>
+  <string key="err.period">período deve ficar entre 1 e 20 s</string>
+  <string key="err.brightness">brilho deve ficar entre 1 e 100%</string>
+  <string key="err.sendinput">SendInput falhou ({error})</string>
+  <string key="err.key_unmapped">tecla HID 0x{code} sem equivalente no Windows</string>
+  <string key="err.media_unsupported">mídia 0x{code} não suportada</string>
+  <string key="err.bad_button">botão {n} inválido</string>
+</language>

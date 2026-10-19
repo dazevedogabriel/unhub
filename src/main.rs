@@ -6,6 +6,8 @@
 
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 
+#[macro_use]
+mod i18n;
 mod agent;
 mod capture;
 mod config;
@@ -27,9 +29,10 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{FindWindowW, SetForegroundWind
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    i18n::set_language(config::Config::load().language.as_deref());
     if args.iter().any(|a| a == "--agent") {
         if let Err(e) = agent::run() {
-            message_box(&format!("O agente de macros parou: {e}"));
+            message_box(&tr!("err.agent_crashed", error = e));
         }
         return;
     }
@@ -67,7 +70,7 @@ fn run_gui() {
         ..Default::default()
     };
     if let Err(e) = eframe::run_native(util::APP_NAME, options, Box::new(|cc| Ok(Box::new(ui::App::new(cc))))) {
-        message_box(&format!("Não foi possível abrir a janela: {e}"));
+        message_box(&tr!("err.window", error = e));
     }
 }
 
@@ -84,32 +87,35 @@ fn print_status() -> i32 {
         let st = m.status()?;
         let (lo, hi, step) = m.dpi_range();
         let p = m.read_profile()?;
-        println!("modelo:   {} ({:04x})", m.name, m.pid);
-        println!("modo:     {}", if st.onboard { "onboard" } else { "host" });
-        println!("setor:    0x{:04x}", m.sector);
-        println!("dpi:      atual {} · faixa {lo}–{hi} passo {step}", st.dpi);
-        println!("níveis:   {:?} padrão {} shift {}", p.dpi_levels(), p.default_dpi_index(), p.shift_dpi_index());
-        println!("taxa:     {} Hz", p.report_rate_hz());
+        let line = |label: String, value: String| println!("{:<10}{value}", format!("{label}:"));
+        line(tr!("cli.model"), format!("{} ({:04x})", m.name, m.pid));
+        line(tr!("cli.mode"), tr!(if st.onboard { "device.onboard" } else { "device.host" }));
+        line(tr!("cli.sector"), format!("0x{:04x}", m.sector));
+        line("dpi".into(), tr!("cli.dpi", current = st.dpi, lo = lo, hi = hi, step = step));
+        line(tr!("cli.levels"), tr!("cli.levels_value", levels = format!("{:?}", p.dpi_levels()),
+            default = p.default_dpi_index(), shift = p.shift_dpi_index()));
+        line(tr!("cli.rate"), format!("{} Hz", p.report_rate_hz()));
         let cfg = config::Config::load();
         for (i, b) in util::button_names(m.pid, m.memory.button_count).iter().enumerate() {
             for g in [false, true] {
                 let desc = match cfg.macro_on_button(m.pid, &p, i, g) {
-                    Some(mac) => format!("Macro: {} ({})", mac.name, mac.summary()),
+                    Some(mac) => format!("{} ({})", tr!("buttons.macro", name = mac.name), mac.summary()),
                     None => p.button(i, g).describe(),
                 };
-                println!("{}{}: {desc}", b.code, if g { " (G-Shift)" } else { "" });
+                let code = if g { tr!("buttons.gshift_suffix", button = b.code) } else { b.code.clone() };
+                println!("{code}: {desc}");
             }
         }
         for (z, name) in util::zones(m.pid, onboard::LED_ZONES) {
-            println!("luz {name} (zona {z}): {:?}", p.led(z));
+            println!("{} {name} ({z}): {:?}", tr!("cli.light"), p.led(z));
         }
-        println!("agente:   {}", if agent::is_running() { "em execução" } else { "parado" });
+        line(tr!("cli.agent"), tr!(if agent::is_running() { "agent.running" } else { "agent.stopped" }));
         Ok(())
     };
     match run() {
         Ok(()) => 0,
         Err(e) => {
-            eprintln!("erro: {e}");
+            eprintln!("{}", tr!("cli.error", error = e));
             1
         }
     }

@@ -24,7 +24,7 @@ const EXTENDED_VK: [u16; 18] = [0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 
 fn send(inputs: &[INPUT]) -> Result<()> {
     let n = unsafe { SendInput(inputs.len() as u32, inputs.as_ptr(), std::mem::size_of::<INPUT>() as i32) };
     if n as usize != inputs.len() {
-        return Err(anyhow!("SendInput falhou ({})", std::io::Error::last_os_error()));
+        return Err(anyhow!(tr!("err.sendinput", error = std::io::Error::last_os_error())));
     }
     Ok(())
 }
@@ -56,12 +56,12 @@ fn key_input(vk: u16, down: bool, force_extended: bool) -> INPUT {
 }
 
 pub fn key(hid: u16, down: bool) -> Result<()> {
-    let vk = keys::hid_to_vk(hid).ok_or_else(|| anyhow!("tecla HID 0x{hid:02x} sem equivalente no Windows"))?;
+    let vk = keys::hid_to_vk(hid).ok_or_else(|| anyhow!(tr!("err.key_unmapped", code = format!("{hid:02x}"))))?;
     send(&[key_input(vk, down, hid == 0x58)])
 }
 
 pub fn media(code: u16) -> Result<()> {
-    let vk = keys::consumer_vk(code).ok_or_else(|| anyhow!("mídia 0x{code:04x} não suportada"))?;
+    let vk = keys::consumer_vk(code).ok_or_else(|| anyhow!(tr!("err.media_unsupported", code = format!("{code:04x}"))))?;
     send(&[kb(vk, 0, KEYEVENTF_EXTENDEDKEY), kb(vk, 0, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP)])
 }
 
@@ -89,7 +89,7 @@ pub fn mouse_button(button: u8, down: bool) -> Result<()> {
         3 => (MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, 0),
         4 => (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON1 as u32),
         5 => (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON2 as u32),
-        _ => return Err(anyhow!("botão {button} inválido")),
+        _ => return Err(anyhow!(tr!("err.bad_button", n = button))),
     };
     send(&[ms(data, if down { d } else { u })])
 }
@@ -158,7 +158,7 @@ impl KeyboardHook {
         })?;
         let (thread_id, ok) = rx.recv()?;
         if !ok {
-            return Err(anyhow!("não foi possível instalar o hook de teclado"));
+            return Err(anyhow!(tr!("err.hook")));
         }
         Ok(Self { thread_id, thread: Some(thread) })
     }

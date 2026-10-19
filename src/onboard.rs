@@ -29,24 +29,24 @@ const OFF_GSHIFT: usize = 96;
 /// 0x05 (ciclo de DPI) foi observado no G6 do G403; os demais seguem a
 /// numeração pública do protocolo (libratbag).
 pub const SPECIAL: [(u8, &str); 11] = [
-    (0x01, "Rolagem para a esquerda"), (0x02, "Rolagem para a direita"),
-    (0x03, "DPI +"), (0x04, "DPI −"), (0x05, "Ciclo de DPI"), (0x06, "DPI padrão"),
-    (0x07, "DPI shift (segurar)"), (0x08, "Próximo perfil"), (0x09, "Perfil anterior"),
-    (0x0A, "Ciclo de perfis"), (0x0B, "G-Shift (segurar)"),
+    (0x01, "special.scroll_left"), (0x02, "special.scroll_right"),
+    (0x03, "special.dpi_up"), (0x04, "special.dpi_down"), (0x05, "special.dpi_cycle"), (0x06, "special.dpi_default"),
+    (0x07, "special.dpi_shift"), (0x08, "special.profile_next"), (0x09, "special.profile_prev"),
+    (0x0A, "special.profile_cycle"), (0x0B, "special.gshift"),
 ];
 
 pub fn special_name(code: u8) -> String {
-    SPECIAL.iter().find(|s| s.0 == code).map(|s| s.1.to_string()).unwrap_or(format!("Especial 0x{code:02x}"))
+    SPECIAL.iter().find(|s| s.0 == code).map(|s| tr!(s.1)).unwrap_or_else(|| tr!("special.unknown", code = format!("{code:02x}")))
 }
 
 pub fn mouse_button_name(n: u8) -> String {
     match n {
-        1 => "Clique esquerdo".into(),
-        2 => "Clique direito".into(),
-        3 => "Clique do meio".into(),
-        4 => "Voltar".into(),
-        5 => "Avançar".into(),
-        n => format!("Botão do mouse {n}"),
+        1 => tr!("mouse.left"),
+        2 => tr!("mouse.right"),
+        3 => tr!("mouse.middle"),
+        4 => tr!("mouse.back"),
+        5 => tr!("mouse.forward"),
+        n => tr!("mouse.n", n = n),
     }
 }
 
@@ -116,12 +116,12 @@ impl Binding {
 
     pub fn describe(&self) -> String {
         match *self {
-            Binding::Disabled => "Desativado".into(),
+            Binding::Disabled => tr!("binding.disabled"),
             Binding::Mouse(n) => mouse_button_name(n),
             Binding::Key { key, mods } => keys::describe_keystroke(mods, key),
             Binding::Media(u) => keys::consumer_name(u),
             Binding::Special(s) => special_name(s),
-            Binding::Raw(r) => format!("Outro ({:02x} {:02x} {:02x} {:02x}) — mantido", r[0], r[1], r[2], r[3]),
+            Binding::Raw(r) => tr!("binding.raw", bytes = format!("{:02x} {:02x} {:02x} {:02x}", r[0], r[1], r[2], r[3])),
         }
     }
 }
@@ -225,7 +225,7 @@ impl Profile {
 
     pub fn set_report_rate_hz(&mut self, hz: u32) -> Result<()> {
         if ![125, 250, 500, 1000].contains(&hz) {
-            bail!("taxa deve ser 125, 250, 500 ou 1000 Hz");
+            bail!(tr!("err.rate"));
         }
         self.data[OFF_RATE] = (1000 / hz) as u8;
         Ok(())
@@ -239,7 +239,7 @@ impl Profile {
     pub fn set_dpi_levels(&mut self, levels: &[u32]) -> Result<()> {
         let active: Vec<u32> = levels.iter().copied().filter(|&v| v != 0).collect();
         if active.is_empty() {
-            bail!("pelo menos um nível de DPI é obrigatório");
+            bail!(tr!("err.dpi_required"));
         }
         for i in 0..DPI_SLOTS {
             let v = active.get(i).copied().unwrap_or(0) as u16;
@@ -261,7 +261,7 @@ impl Profile {
 
     pub fn set_default_dpi_index(&mut self, i: usize) -> Result<()> {
         if i >= self.active_dpi_count() {
-            bail!("índice de DPI fora da tabela");
+            bail!(tr!("err.dpi_index"));
         }
         self.data[OFF_DEFAULT_DPI] = i as u8;
         Ok(())
@@ -273,7 +273,7 @@ impl Profile {
 
     pub fn set_shift_dpi_index(&mut self, i: usize) -> Result<()> {
         if i >= self.active_dpi_count() {
-            bail!("índice de DPI fora da tabela");
+            bail!(tr!("err.dpi_index"));
         }
         self.data[OFF_SHIFT_DPI] = i as u8;
         Ok(())
@@ -299,14 +299,14 @@ impl Profile {
 
     pub fn set_led(&mut self, zone: usize, effect: &LedEffect) -> Result<()> {
         if zone >= LED_ZONES {
-            bail!("zona inválida");
+            bail!(tr!("err.zone"));
         }
         if effect.effect == FX_CYCLE || effect.effect == FX_BREATH {
             if !(1000..=20000).contains(&effect.period_ms) {
-                bail!("período deve ficar entre 1 e 20 s");
+                bail!(tr!("err.period"));
             }
             if !(1..=100).contains(&effect.brightness) {
-                bail!("brilho deve ficar entre 1 e 100%");
+                bail!(tr!("err.brightness"));
             }
         }
         let raw = effect.encode();
@@ -330,11 +330,11 @@ impl OnboardMemory {
     pub fn new(mut dev: Device) -> Result<Self> {
         let fi = dev
             .feature_index(FEATURE_ONBOARD_PROFILES)?
-            .ok_or_else(|| anyhow!("este dispositivo não tem perfis onboard (0x8100)"))?;
+            .ok_or_else(|| anyhow!(tr!("err.no_onboard")))?;
         let info = dev.request(fi, 0, &[])?;
         let sector_size = u16::from_be_bytes([info[7], info[8]]) as usize;
         if !(32..=4096).contains(&sector_size) {
-            bail!("tamanho de setor inesperado: {sector_size}");
+            bail!(tr!("err.sector_unexpected", size = sector_size));
         }
         Ok(Self { dev, fi, button_count: info[5] as usize, sector_size })
     }
@@ -375,11 +375,11 @@ impl OnboardMemory {
 
     pub fn write_sector(&self, sector: u16, data: &[u8]) -> Result<()> {
         if data.len() != self.sector_size {
-            bail!("tamanho de setor inválido");
+            bail!(tr!("err.sector_size"));
         }
         let n = data.len();
         if crc_ccitt(&data[..n - 2]) != u16::from_be_bytes([data[n - 2], data[n - 1]]) {
-            bail!("CRC inválido; recusando gravar");
+            bail!(tr!("err.crc_refuse"));
         }
         let s = sector.to_be_bytes();
         self.call(6, &[s[0], s[1], 0, 0, (n >> 8) as u8, n as u8])?;
@@ -388,7 +388,7 @@ impl OnboardMemory {
         }
         self.call(8, &[])?;
         if self.read_sector(sector)? != data {
-            bail!("a verificação após a gravação falhou");
+            bail!(tr!("err.verify"));
         }
         Ok(())
     }
@@ -413,14 +413,14 @@ impl OnboardMemory {
             .into_iter()
             .find(|(_, enabled)| *enabled)
             .map(|(s, _)| s)
-            .ok_or_else(|| anyhow!("nenhum perfil onboard habilitado; restaure o mouse pelo G HUB uma vez"))
+            .ok_or_else(|| anyhow!(tr!("err.no_profile")))
     }
 
     pub fn load_profile(&self) -> Result<(u16, Profile)> {
         let sector = self.profile_sector()?;
         let profile = Profile::new(self.read_sector(sector)?);
         if !profile.crc_ok() {
-            bail!("CRC inválido no setor 0x{sector:04x}");
+            bail!(tr!("err.sector_crc", sector = format!("{sector:04x}")));
         }
         Ok((sector, profile))
     }

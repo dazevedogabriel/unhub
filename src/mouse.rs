@@ -34,7 +34,7 @@ impl Mouse {
             }
         }
         let extra = if errors.is_empty() { String::new() } else { format!(" ({})", errors.join("; ")) };
-        Err(anyhow!("nenhum mouse Logitech G compatível encontrado{extra}"))
+        Err(anyhow!("{}{extra}", tr!("err.no_device")))
     }
 
     fn from_device(dev: Device) -> Result<Self> {
@@ -83,7 +83,7 @@ impl Mouse {
 
     pub fn restore_original(&mut self) -> Result<PathBuf> {
         let path = util::original_backup(self.pid, self.sector)
-            .ok_or_else(|| anyhow!("nenhum backup encontrado para este mouse"))?;
+            .ok_or_else(|| anyhow!(tr!("err.no_backup")))?;
         let data = std::fs::read(&path)?;
         self.memory.save_profile(self.sector, &Profile::new(data))?;
         Ok(path)

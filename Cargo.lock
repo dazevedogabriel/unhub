@@ -3806,6 +3806,7 @@ dependencies = [
  "hidapi",
  "resvg",
  "rfd",
+ "roxmltree",
  "rusqlite",
  "serde",
  "serde_json",

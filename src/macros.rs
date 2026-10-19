@@ -26,13 +26,13 @@ pub enum WheelDir {
 impl WheelDir {
     pub const ALL: [WheelDir; 4] = [WheelDir::Up, WheelDir::Down, WheelDir::Left, WheelDir::Right];
 
-    pub fn label(self) -> &'static str {
-        match self {
-            WheelDir::Up => "Rolar para cima",
-            WheelDir::Down => "Rolar para baixo",
-            WheelDir::Left => "Rolar para a esquerda",
-            WheelDir::Right => "Rolar para a direita",
-        }
+    pub fn label(self) -> String {
+        tr!(match self {
+            WheelDir::Up => "wheel.up",
+            WheelDir::Down => "wheel.down",
+            WheelDir::Left => "wheel.left",
+            WheelDir::Right => "wheel.right",
+        })
     }
 }
 
@@ -66,12 +66,12 @@ impl Step {
     /// (tag, texto) para a lista de ações.
     pub fn describe(&self) -> (&'static str, String) {
         match self {
-            Step::Key { code, down } => (if *down { "DOWN" } else { "UP" }, format!("Tecla {}", keys::key_name(*code))),
+            Step::Key { code, down } => (if *down { "DOWN" } else { "UP" }, tr!("step.key", key = keys::key_name(*code))),
             Step::Mouse { button, down } => (if *down { "DOWN" } else { "UP" }, mouse_button_name(*button)),
             Step::Wheel { dir, amount } => {
-                ("SCROLL", if *amount != 1 { format!("{} · {amount}", dir.label()) } else { dir.label().into() })
+                ("SCROLL", if *amount != 1 { format!("{} · {amount}", dir.label()) } else { dir.label() })
             }
-            Step::Delay { ms } => ("WAIT", format!("Aguardar {ms} ms")),
+            Step::Delay { ms } => ("WAIT", tr!("step.wait", ms = ms)),
             Step::Text { text } => {
                 let t: String = text.replace('\n', "⏎");
                 let short: String = t.chars().take(48).collect();
@@ -102,22 +102,24 @@ impl MacroType {
     /// Na ordem do seletor da interface.
     pub const ALL: [MacroType; 4] = [MacroType::Repeat, MacroType::Simple, MacroType::Toggle, MacroType::Sequence];
 
-    pub fn label(self) -> &'static str {
-        match self {
-            MacroType::Repeat => "Repetir enquanto pressionado",
-            MacroType::Simple => "Executar uma vez",
-            MacroType::Toggle => "Alternar (liga/desliga)",
-            MacroType::Sequence => "Pressionar e soltar",
-        }
+    pub fn label(self) -> String {
+        tr!(match self {
+            MacroType::Repeat => "mtype.repeat",
+            MacroType::Simple => "mtype.simple",
+            MacroType::Toggle => "mtype.toggle",
+            MacroType::Sequence => "mtype.sequence",
+        })
     }
 
-    pub fn info(self) -> (&'static str, &'static str) {
-        match self {
-            MacroType::Repeat => ("Enquanto pressionado", "Repete as ações enquanto o botão estiver pressionado."),
-            MacroType::Simple => ("Ao pressionar", "Executa a sequência uma vez a cada clique."),
-            MacroType::Toggle => ("Em loop", "Um clique inicia o loop, outro clique para."),
-            MacroType::Sequence => ("Ao pressionar / ao soltar", "Ações ao pressionar, em loop enquanto segura, e ao soltar."),
-        }
+    /// (título, descrição) da lista principal do tipo.
+    pub fn info(self) -> (String, String) {
+        let (t, d) = match self {
+            MacroType::Repeat => ("mtype.repeat_title", "mtype.repeat_desc"),
+            MacroType::Simple => ("mtype.simple_title", "mtype.simple_desc"),
+            MacroType::Toggle => ("mtype.toggle_title", "mtype.toggle_desc"),
+            MacroType::Sequence => ("mtype.sequence_title", "mtype.sequence_desc"),
+        };
+        (tr!(t), tr!(d))
     }
 
     pub fn lists(self) -> &'static [ListName] {
@@ -140,13 +142,13 @@ pub enum ListName {
 }
 
 impl ListName {
-    pub fn label(self) -> &'static str {
-        match self {
-            ListName::Simple | ListName::Toggle => "Ações",
-            ListName::Press => "Ao pressionar",
-            ListName::Held => "Enquanto segura",
-            ListName::Release => "Ao soltar",
-        }
+    pub fn label(self) -> String {
+        tr!(match self {
+            ListName::Simple | ListName::Toggle => "list.actions",
+            ListName::Press => "list.press",
+            ListName::Held => "list.held",
+            ListName::Release => "list.release",
+        })
     }
 }
 
@@ -246,13 +248,13 @@ impl Macro {
     }
 
     pub fn summary(&self) -> String {
-        format!("{} · {} ações", self.kind.label(), self.step_count())
+        format!("{} · {}", self.kind.label(), tr_n!("macro.count", self.step_count()))
     }
 
     pub fn normalize(&mut self) {
         self.default_delay = self.default_delay.min(60_000);
         if self.name.trim().is_empty() {
-            self.name = "Macro".into();
+            self.name = tr!("macro.default_name");
         }
     }
 
@@ -281,7 +283,7 @@ impl Macro {
     }
 
     pub fn duplicate(&self) -> Self {
-        Self { id: new_id(), name: format!("{} (cópia)", self.name), ..self.clone() }
+        Self { id: new_id(), name: tr!("macro.copy", name = self.name), ..self.clone() }
     }
 }
 
@@ -324,14 +326,15 @@ fn ghub_component(c: &Value, warnings: &mut Vec<String>) -> Vec<Step> {
         }
     }
     let keys: Vec<&String> = c.as_object().map(|o| o.keys().take(3).collect()).unwrap_or_default();
-    warnings.push(format!("componente não suportado ignorado: {keys:?}"));
+    warnings.push(tr!("macro.unsupported", keys = format!("{keys:?}")));
     vec![]
 }
 
 /// Card MACRO_PLAYBACK do G HUB -> macro (ou None se não for convertível).
 pub fn from_ghub_card(card: &Value, warnings: &mut Vec<String>) -> Option<Macro> {
     let mac = card.get("macro")?;
-    let name = card["name"].as_str().unwrap_or("Macro do G HUB");
+    let fallback = tr!("macro.ghub_name");
+    let name = card["name"].as_str().unwrap_or(&fallback);
     if mac["type"].as_str() == Some("KEYSTROKE") {
         let ks = &mac["keystroke"];
         let mods: Vec<u16> = ks["modifiers"].as_array().map(|l| l.iter().filter_map(|v| v.as_u64()).map(|v| v as u16).collect()).unwrap_or_default();

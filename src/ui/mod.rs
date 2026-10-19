@@ -32,11 +32,12 @@ pub enum Tab {
     Light,
 }
 
+/// (aba, chave do título, chave do subtítulo)
 const TABS: [(Tab, &str, &str); 4] = [
-    (Tab::Buttons, "Atalhos", "Atribua uma ação a cada botão"),
-    (Tab::Macros, "Macros", "Sequências executadas pelo agente"),
-    (Tab::Dpi, "DPI", "Níveis de sensibilidade do sensor"),
-    (Tab::Light, "Iluminação", "Efeitos de LED por zona"),
+    (Tab::Buttons, "nav.buttons", "nav.buttons_sub"),
+    (Tab::Macros, "nav.macros", "nav.macros_sub"),
+    (Tab::Dpi, "nav.dpi", "nav.dpi_sub"),
+    (Tab::Light, "nav.light", "nav.light_sub"),
 ];
 
 enum Conn {
@@ -58,6 +59,7 @@ pub struct App {
     profile: Option<Profile>,
     status: Option<Status>,
     dirty: bool,
+    /// chave do texto da operação em andamento
     busy: Option<&'static str>,
 
     cfg: Config,
@@ -163,7 +165,7 @@ impl App {
 
     fn save_cfg_now(&mut self) {
         if let Err(e) = self.cfg.save() {
-            self.flash_err(format!("Não foi possível salvar a configuração: {e}"));
+            self.flash_err(tr!("toast.save_failed", error = e));
         }
         self.cfg_dirty = false;
     }
@@ -204,7 +206,7 @@ impl App {
                 }
                 Event::NoDevice(msg) => {
                     if matches!(self.conn, Conn::Ready(_)) {
-                        self.flash_err("Mouse desconectado");
+                        self.flash_err(tr!("toast.disconnected"));
                     }
                     self.conn = Conn::Missing(msg);
                     self.profile = None;
@@ -215,7 +217,7 @@ impl App {
                 Event::Profile(p) => {
                     self.busy = None;
                     self.load_profile(p);
-                    self.flash("Configuração lida do mouse");
+                    self.flash(tr!("toast.reloaded"));
                 }
                 Event::Status(s) => self.status = Some(s),
                 Event::Applied(p) => {
@@ -224,18 +226,18 @@ impl App {
                     let name = self.device().map(|d| d.name.clone()).unwrap_or_default();
                     if self.uses_macros() && !agent::is_running() {
                         match agent::start_detached() {
-                            Ok(()) => self.flash(format!("Perfil gravado no {name} · agente de macros iniciado")),
-                            Err(e) => self.flash_err(format!("Perfil gravado, mas o agente não iniciou: {e}")),
+                            Ok(()) => self.flash(tr!("toast.applied_agent", name = name)),
+                            Err(e) => self.flash_err(tr!("toast.applied_agent_failed", error = e)),
                         }
                     } else {
-                        self.flash(format!("Perfil gravado no {name}"));
+                        self.flash(tr!("toast.applied", name = name));
                     }
                 }
                 Event::Restored(path, p) => {
                     self.busy = None;
                     self.load_profile(p);
                     let file = path.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
-                    self.flash(format!("Perfil original restaurado ({file})"));
+                    self.flash(tr!("toast.restored", file = file));
                 }
                 Event::DpiTested(v) => {
                     if let Some(s) = &mut self.status {
@@ -258,7 +260,7 @@ impl App {
     // --- ações do cabeçalho ----------------------------------------------------------------
 
     fn do_reload(&mut self) {
-        self.busy = Some("Lendo o mouse…");
+        self.busy = Some("busy.reading");
         self.worker.send(Cmd::Reload);
     }
 
@@ -269,12 +271,12 @@ impl App {
             self.cfg.prune(pid, &p);
         }
         self.save_cfg_now();
-        self.busy = Some("Gravando no mouse…");
+        self.busy = Some("busy.writing");
         self.worker.send(Cmd::Apply(p));
     }
 
     fn do_restore(&mut self) {
-        self.busy = Some("Restaurando…");
+        self.busy = Some("busy.restoring");
         self.worker.send(Cmd::Restore);
     }
 
@@ -326,6 +328,7 @@ impl App {
 
         let buttons = [("—", 0), (if maximized { "❐" } else { "▢" }, 1), ("✕", 2)];
         let mut x = rect.right() - 6.0 - 3.0 * 40.0 - 4.0;
+        self.language_picker(ui, Pos2::new(x - 10.0, rect.center().y));
         for (label, k) in buttons {
             let r = Rect::from_min_size(Pos2::new(x, rect.top() + 5.0), Vec2::new(40.0, 28.0));
             let resp = ui.interact(r, ui.scope_id().with(("wbtn", k)), Sense::click());
@@ -344,6 +347,53 @@ impl App {
                 }
             }
             x += 42.0;
+        }
+    }
+
+    /// Seletor de idioma na barra de título (termina em `right_center`).
+    fn language_picker(&mut self, ui: &mut Ui, right_center: Pos2) {
+        let label = format!("{} ▾", crate::i18n::current().to_uppercase());
+        let w = text_size(ui, &label, mono(11.0)).x + 34.0;
+        let r = Rect::from_min_size(Pos2::new(right_center.x - w, right_center.y - 13.0), Vec2::new(w, 26.0));
+        let resp = ui
+            .interact(r, ui.scope_id().with("lang"), Sense::click())
+            .on_hover_cursor(egui::CursorIcon::PointingHand)
+            .on_hover_text(tr!("lang.title"));
+        if resp.hovered() {
+            ui.painter().rect_filled(r, 6, hex(0x1B1D22));
+        }
+        let globe = Rect::from_center_size(Pos2::new(r.left() + 14.0, r.center().y), Vec2::splat(12.0));
+        ui.painter().circle_stroke(globe.center(), 5.5, Stroke::new(1.1, MUTED));
+        ui.painter().line_segment([globe.left_center(), globe.right_center()], Stroke::new(1.0, MUTED));
+        ui.painter().add(egui::Shape::ellipse_stroke(globe.center(), Vec2::new(2.4, 5.5), Stroke::new(1.0, MUTED)));
+        ui.painter().text(Pos2::new(r.left() + 26.0, r.center().y), Align2::LEFT_CENTER, &label, mono(11.0),
+            if resp.hovered() { TEXT } else { MUTED });
+
+        let mut chosen: Option<Option<String>> = None;
+        egui::Popup::menu(&resp).show(|ui| {
+            ui.set_min_width(200.0);
+            let auto = self.cfg.language.is_none();
+            let system = crate::i18n::languages()
+                .into_iter()
+                .find(|l| l.code == crate::i18n::system_choice())
+                .map(|l| l.name)
+                .unwrap_or_default();
+            if ui.selectable_label(auto, egui::RichText::new(tr!("lang.auto", name = system)).font(f(13.0))).clicked() {
+                chosen = Some(None);
+            }
+            ui.separator();
+            for l in crate::i18n::languages() {
+                let sel = self.cfg.language.as_deref() == Some(l.code.as_str());
+                if ui.selectable_label(sel, egui::RichText::new(&l.name).font(f(13.0))).clicked() {
+                    chosen = Some(Some(l.code.clone()));
+                }
+            }
+        });
+        if let Some(lang) = chosen {
+            crate::i18n::set_language(lang.as_deref());
+            self.cfg.language = lang;
+            // o agente relê o config.json e troca o idioma da bandeja também
+            self.cfg_changed();
         }
     }
 
@@ -390,7 +440,7 @@ impl App {
         p.image(self.logo.id(), logo, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)), Color32::WHITE);
         let tx = logo.right() + 10.0;
         p.galley(Pos2::new(tx, y), g, TEXT);
-        p.text(Pos2::new(tx + gw.x + 8.0, y + gw.y - 6.0), Align2::LEFT_BOTTOM, "sem G HUB", mono(10.0), DIM);
+        p.text(Pos2::new(tx + gw.x + 8.0, y + gw.y - 6.0), Align2::LEFT_BOTTOM, tr!("app.tagline"), mono(10.0), DIM);
         y += gw.y + 24.0;
 
         // cartão do dispositivo
@@ -398,22 +448,22 @@ impl App {
         p.rect(card, 12, CARD, Stroke::new(1.0, BORDER), egui::StrokeKind::Inside);
         let c = card.shrink(14.0);
         let (label, dotc, name) = match &self.conn {
-            Conn::Ready(d) => ("CONECTADO", ACCENT, d.name.clone()),
-            Conn::Searching => ("PROCURANDO", AMBER, "…".into()),
-            Conn::Missing(_) => ("DESCONECTADO", hex(0x5C616B), "Nenhum mouse".into()),
+            Conn::Ready(d) => (tr!("device.connected"), ACCENT, d.name.clone()),
+            Conn::Searching => (tr!("device.searching"), AMBER, "…".into()),
+            Conn::Missing(_) => (tr!("device.disconnected"), hex(0x5C616B), tr!("device.none")),
         };
-        paint_caps(ui, Pos2::new(c.left(), c.top() + 6.0), Align2::LEFT_CENTER, label, MUTED);
+        paint_caps(ui, Pos2::new(c.left(), c.top() + 6.0), Align2::LEFT_CENTER, &label, MUTED);
         dot(ui, Pos2::new(c.right() - 4.0, c.top() + 6.0), 3.5, dotc, matches!(self.conn, Conn::Ready(_)));
         paint_text(ui, Pos2::new(c.left(), c.top() + 22.0), Align2::LEFT_TOP, &name, fm(17.0), TEXT, c.width());
         let half = (c.width() - 8.0) / 2.0;
         let stats = [
-            ("MODO", match self.status { Some(s) if s.onboard => "Onboard".to_string(), Some(_) => "Host".into(), None => "—".into() }, false),
-            ("DPI", self.status.map(|s| s.dpi.to_string()).unwrap_or("—".into()), true),
+            (tr!("device.mode"), match self.status { Some(s) if s.onboard => tr!("device.onboard"), Some(_) => tr!("device.host"), None => "—".into() }, false),
+            ("DPI".to_string(), self.status.map(|s| s.dpi.to_string()).unwrap_or("—".into()), true),
         ];
         for (i, (k, v, is_mono)) in stats.iter().enumerate() {
             let r = Rect::from_min_size(Pos2::new(c.left() + i as f32 * (half + 8.0), c.top() + 54.0), Vec2::new(half, 46.0));
             p.rect_filled(r, 8, SIDEBAR);
-            p.text(Pos2::new(r.left() + 10.0, r.top() + 8.0), Align2::LEFT_TOP, *k, mono(10.0), DIM);
+            p.text(Pos2::new(r.left() + 10.0, r.top() + 8.0), Align2::LEFT_TOP, k, mono(10.0), DIM);
             p.text(Pos2::new(r.left() + 10.0, r.bottom() - 8.0), Align2::LEFT_BOTTOM, v, if *is_mono { mono(13.0) } else { fm(13.0) }, TEXT);
         }
         if let Conn::Missing(msg) = &self.conn {
@@ -437,7 +487,7 @@ impl App {
             }
             p.text(Pos2::new(r.left() + 12.0, r.center().y), Align2::LEFT_CENTER, format!("0{}", i + 1), mono(10.0),
                 if active { ACCENT } else { FAINT });
-            p.text(Pos2::new(r.left() + 36.0, r.center().y), Align2::LEFT_CENTER, *label, fm(14.0),
+            p.text(Pos2::new(r.left() + 36.0, r.center().y), Align2::LEFT_CENTER, tr!(*label), fm(14.0),
                 if active { TEXT } else { MUTED });
             if resp.clicked() && !active {
                 self.stop_captures();
@@ -451,23 +501,23 @@ impl App {
         p.line_segment([Pos2::new(inner.left(), foot_top), Pos2::new(inner.right(), foot_top)], Stroke::new(1.0, LINE));
         let fx = inner.left() + 6.0;
         let fw = inner.width() - 12.0;
-        paint_caps(ui, Pos2::new(fx, foot_top + 16.0), Align2::LEFT_TOP, "AGENTE DE MACROS", DIM);
+        paint_caps(ui, Pos2::new(fx, foot_top + 16.0), Align2::LEFT_TOP, &tr!("agent.title"), DIM);
         let row = foot_top + 50.0;
         let (lbl, dc) = if self.agent_running {
-            ("Em execução", ACCENT)
+            (tr!("agent.running"), ACCENT)
         } else if self.uses_macros() {
-            ("Parado", AMBER)
+            (tr!("agent.stopped"), AMBER)
         } else {
-            ("Parado", DIM)
+            (tr!("agent.stopped"), DIM)
         };
         dot(ui, Pos2::new(fx + 3.5, row), 3.5, dc, false);
-        let lr = paint_text(ui, Pos2::new(fx + 15.0, row), Align2::LEFT_CENTER, lbl, f(13.0), TEXT, fw - 80.0);
+        let lr = paint_text(ui, Pos2::new(fx + 15.0, row), Align2::LEFT_CENTER, &lbl, f(13.0), TEXT, fw - 80.0);
         if !self.agent_running && self.uses_macros() {
             ui.interact(lr, ui.scope_id().with("agenthint"), Sense::hover())
-                .on_hover_text("Há botões com macro: sem o agente eles não fazem nada.");
+                .on_hover_text(tr!("agent.stopped_hint"));
         }
-        let btxt = if self.agent_running { "Parar" } else { "Iniciar" };
-        let bw = text_size(ui, btxt, f(12.0)).x + 18.0;
+        let btxt = tr!(if self.agent_running { "agent.stop" } else { "agent.start" });
+        let bw = text_size(ui, &btxt, f(12.0)).x + 18.0;
         let br = Rect::from_min_size(Pos2::new(fx + fw - bw, row - 13.0), Vec2::new(bw, 26.0));
         let bresp = ui.interact(br, ui.scope_id().with("agentbtn"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
         p.rect(br, 6, Color32::TRANSPARENT, Stroke::new(1.0, if bresp.hovered() { BORDER3 } else { BORDER2 }), egui::StrokeKind::Inside);
@@ -475,11 +525,11 @@ impl App {
         if bresp.clicked() {
             if self.agent_running {
                 agent::request_stop();
-                self.flash("Agente de macros parado");
+                self.flash(tr!("agent.stopped_toast"));
             } else {
                 match agent::start_detached() {
-                    Ok(()) => self.flash("Agente de macros iniciado (ícone na bandeja)"),
-                    Err(e) => self.flash_err(format!("Não foi possível iniciar o agente: {e}")),
+                    Ok(()) => self.flash(tr!("agent.started_toast")),
+                    Err(e) => self.flash_err(tr!("agent.start_failed", error = e)),
                 }
             }
             self.last_poll = Instant::now() - Duration::from_millis(1600);
@@ -487,7 +537,7 @@ impl App {
         let srow = foot_top + 88.0;
         let sr = Rect::from_min_max(Pos2::new(fx, srow - 10.0), Pos2::new(fx + fw, srow + 10.0));
         let sresp = ui.interact(sr, ui.scope_id().with("autostart"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
-        p.text(Pos2::new(fx, srow), Align2::LEFT_CENTER, "Iniciar com o Windows", f(13.0), MUTED);
+        p.text(Pos2::new(fx, srow), Align2::LEFT_CENTER, tr!("agent.autostart"), f(13.0), MUTED);
         paint_toggle(ui, Rect::from_center_size(Pos2::new(fx + fw - 15.0, srow), Vec2::new(30.0, 18.0)), self.autostart, sresp.hovered());
         if sresp.clicked() {
             match agent::set_autostart(!self.autostart) {
@@ -501,11 +551,11 @@ impl App {
         let p = ui.painter().clone();
         p.line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(1.0, LINE));
         let (_, title, sub) = TABS.iter().find(|t| t.0 == self.tab).unwrap();
-        let mut tj = egui::text::LayoutJob::single_section(title.to_string(), egui::TextFormat::simple(fm(21.0), TEXT));
+        let mut tj = egui::text::LayoutJob::single_section(tr!(*title), egui::TextFormat::simple(fm(21.0), TEXT));
         tj.sections[0].format.extra_letter_spacing = -0.3;
         let g = ui.painter().layout_job(tj);
         p.galley(Pos2::new(rect.left() + 28.0, rect.center().y - 24.0), g, TEXT);
-        p.text(Pos2::new(rect.left() + 28.0, rect.center().y + 6.0), Align2::LEFT_TOP, *sub, f(13.0), MUTED);
+        p.text(Pos2::new(rect.left() + 28.0, rect.center().y + 6.0), Align2::LEFT_TOP, tr!(*sub), f(13.0), MUTED);
 
         // botões à direita
         let ready = self.profile.is_some() && self.busy.is_none();
@@ -522,12 +572,12 @@ impl App {
             }
             button_sized(&mut c, label, kind, Some(w), 13.0).clicked()
         };
-        if place(ui, "Aplicar no mouse", Btn::Primary, ready) {
+        if place(ui, &tr!("header.apply"), Btn::Primary, ready) {
             if self.ghub {
                 self.dialog = Some(Dialog::confirm(
-                    "G HUB aberto",
-                    "O G HUB está aberto e vai sobrepor esta configuração. Feche-o (inclusive na bandeja) ou grave mesmo assim.",
-                    "Gravar mesmo assim",
+                    &tr!("confirm.ghub_title"),
+                    &tr!("confirm.ghub_body"),
+                    &tr!("confirm.ghub_ok"),
                     false,
                     dialogs::Pending::Apply,
                 ));
@@ -535,28 +585,29 @@ impl App {
                 self.do_apply();
             }
         }
-        if place(ui, "Restaurar original", Btn::Outline, ready) {
+        if place(ui, &tr!("header.restore"), Btn::Outline, ready) {
             self.dialog = Some(Dialog::confirm(
-                "Restaurar original",
-                "Voltar ao perfil que estava no mouse antes do primeiro uso do UNHUB (ou do LGLITE)? Isso grava direto no mouse.",
-                "Restaurar",
+                &tr!("header.restore"),
+                &tr!("confirm.restore_body"),
+                &tr!("confirm.restore_ok"),
                 true,
                 dialogs::Pending::Restore,
             ));
         }
-        if place(ui, "Recarregar do mouse", Btn::Outline, ready) {
+        if place(ui, &tr!("header.reload"), Btn::Outline, ready) {
             if self.dirty {
-                self.dialog = Some(Dialog::confirm("Recarregar", "Descartar as alterações não aplicadas?", "Descartar", true, dialogs::Pending::Reload));
+                self.dialog = Some(Dialog::confirm(&tr!("confirm.reload_title"), &tr!("confirm.reload_body"), &tr!("confirm.discard"),
+                    true, dialogs::Pending::Reload));
             } else {
                 self.do_reload();
             }
         }
         if self.dirty || self.busy.is_some() {
             let (txt, col) = match self.busy {
-                Some(b) => (b, BLUE),
-                None => ("não aplicado", AMBER),
+                Some(b) => (tr!(b), BLUE),
+                None => (tr!("header.unapplied"), AMBER),
             };
-            let tw = text_size(ui, txt, mono(12.0)).x;
+            let tw = text_size(ui, &txt, mono(12.0)).x;
             let x = right - 8.0 - tw;
             dot(ui, Pos2::new(x - 9.0, rect.center().y), 3.0, col, false);
             p.text(Pos2::new(x, rect.center().y), Align2::LEFT_CENTER, txt, mono(12.0), col);
@@ -565,9 +616,9 @@ impl App {
 
     fn empty_state(&mut self, ui: &mut Ui, rect: Rect) {
         let (title, body) = match &self.conn {
-            Conn::Searching => ("Procurando o mouse…", "Conecte um mouse Logitech G com fio.".to_string()),
-            Conn::Missing(m) => ("Nenhum mouse encontrado", format!("{m}.\nConecte o mouse — o UNHUB tenta de novo sozinho.")),
-            Conn::Ready(_) => ("Lendo o perfil…", String::new()),
+            Conn::Searching => (tr!("empty.searching"), tr!("empty.searching_body")),
+            Conn::Missing(m) => (tr!("empty.missing"), format!("{m}.\n{}", tr!("empty.retry"))),
+            Conn::Ready(_) => (tr!("empty.reading"), String::new()),
         };
         let c = rect.center();
         ui.painter().text(Pos2::new(c.x, c.y - 20.0), Align2::CENTER_CENTER, title, fm(18.0), TEXT);
@@ -580,15 +631,11 @@ impl App {
         let inner = Rect::from_min_max(rect.min + Vec2::new(28.0, 24.0), rect.max - Vec2::new(28.0, 24.0));
         let mut inner = inner;
         if self.ghub || self.legacy_agent && self.uses_macros() {
-            let msg = if self.ghub {
-                "O G HUB está aberto: ele assume o controle do mouse e ignora o perfil onboard. Feche-o (inclusive na bandeja)."
-            } else {
-                "O agente do LGLITE (Python) está aberto junto: feche-o pelo ícone da bandeja para não tocar macros em dobro."
-            };
+            let msg = tr!(if self.ghub { "banner.ghub" } else { "banner.legacy" });
             let r = Rect::from_min_size(inner.min, Vec2::new(inner.width(), 38.0));
             ui.painter().rect(r, 10, alpha(AMBER, 0.08), Stroke::new(1.0, alpha(AMBER, 0.35)), egui::StrokeKind::Inside);
             dot(ui, Pos2::new(r.left() + 16.0, r.center().y), 3.0, AMBER, false);
-            paint_text(ui, Pos2::new(r.left() + 28.0, r.center().y), Align2::LEFT_CENTER, msg, f(13.0), AMBER, r.width() - 40.0);
+            paint_text(ui, Pos2::new(r.left() + 28.0, r.center().y), Align2::LEFT_CENTER, &msg, f(13.0), AMBER, r.width() - 40.0);
             inner.min.y += 50.0;
         }
         if self.profile.is_none() && self.tab != Tab::Macros {
@@ -649,7 +696,7 @@ impl eframe::App for App {
         if ctx.input(|i| i.viewport().close_requested()) && !self.allow_close {
             if self.dirty {
                 ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-                self.dialog = Some(Dialog::confirm("Sair", "Sair sem aplicar as alterações no mouse?", "Sair", true, dialogs::Pending::Close));
+                self.dialog = Some(Dialog::confirm(&tr!("confirm.quit"), &tr!("confirm.quit_body"), &tr!("confirm.quit"), true, dialogs::Pending::Close));
             } else {
                 self.stop_captures();
                 if self.cfg_dirty {

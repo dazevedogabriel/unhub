@@ -105,7 +105,7 @@ fn run(rx: Receiver<Cmd>, tx: Sender<Event>, ctx: eframe::egui::Context) {
                 last_try = Instant::now() - Duration::from_secs(60);
                 last_err.clear();
             } else if cmd.is_some() {
-                emit(Event::Error("mouse desconectado".into()));
+                emit(Event::Error(tr!("err.disconnected").into()));
             }
             continue;
         };
@@ -133,7 +133,7 @@ fn run(rx: Receiver<Cmd>, tx: Sender<Event>, ctx: eframe::egui::Context) {
                 }
                 if gone {
                     mouse = None;
-                    last_err = "mouse desconectado".into();
+                    last_err = tr!("err.disconnected").into();
                     emit(Event::NoDevice(last_err.clone()));
                     last_try = Instant::now() - Duration::from_secs(60);
                 }

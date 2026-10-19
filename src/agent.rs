@@ -97,7 +97,7 @@ pub fn set_autostart(enabled: bool) -> Result<()> {
             let r = RegSetKeyValueW(HKEY_CURRENT_USER, k.as_ptr(), v.as_ptr(), REG_SZ,
                 cmd.as_ptr() as *const _, (cmd.len() * 2) as u32);
             if r != 0 {
-                anyhow::bail!("não foi possível gravar no registro (erro {r})");
+                anyhow::bail!(tr!("err.registry", code = r));
             }
             // evita dois agentes no logon (o do LGLITE em Python e este)
             if run_value_exists(LEGACY_RUN_VALUE) {
@@ -130,6 +130,7 @@ fn player() -> &'static Player {
 
 fn reload() -> usize {
     let cfg = Config::load();
+    crate::i18n::set_language(cfg.language.as_deref());
     let mut triggers = HashMap::new();
     for dev in cfg.triggers.values() {
         for (code, t) in dev {
@@ -179,8 +180,7 @@ fn config_mtime() -> Option<SystemTime> {
 
 fn tooltip() -> String {
     let n = trigger_count();
-    let state = if PAUSED.load(Ordering::Relaxed) { "pausadas" } else { "ativas" };
-    format!("UNHUB — macros {state} ({n} {})", if n == 1 { "botão" } else { "botões" })
+    tr_n!(if PAUSED.load(Ordering::Relaxed) { "tray.paused" } else { "tray.active" }, n)
 }
 
 pub fn run() -> Result<()> {
@@ -218,10 +218,10 @@ pub fn run() -> Result<()> {
         });
 
         let title = MenuItem::new(tooltip(), false, None);
-        let open = MenuItem::new("Abrir UNHUB", true, None);
-        let pause = CheckMenuItem::new("Pausar macros", true, false, None);
-        let reload_item = MenuItem::new("Recarregar configuração", true, None);
-        let quit = MenuItem::new("Sair", true, None);
+        let open = MenuItem::new(tr!("tray.open"), true, None);
+        let pause = CheckMenuItem::new(tr!("tray.pause"), true, false, None);
+        let reload_item = MenuItem::new(tr!("tray.reload"), true, None);
+        let quit = MenuItem::new(tr!("tray.quit"), true, None);
         let menu = Menu::new();
         menu.append_items(&[&title, &PredefinedMenuItem::separator(), &open, &pause, &reload_item,
             &PredefinedMenuItem::separator(), &quit])?;
@@ -233,10 +233,15 @@ pub fn run() -> Result<()> {
             .with_icon(icon)
             .build()?;
 
+        // também reaplica os textos, caso o idioma tenha mudado na interface
         let refresh = |tray: &tray_icon::TrayIcon| {
             let t = tooltip();
             title.set_text(&t);
             let _ = tray.set_tooltip(Some(t));
+            open.set_text(tr!("tray.open"));
+            pause.set_text(tr!("tray.pause"));
+            reload_item.set_text(tr!("tray.reload"));
+            quit.set_text(tr!("tray.quit"));
         };
         let open_app = || {
             let _ = std::process::Command::new(exe()).spawn();

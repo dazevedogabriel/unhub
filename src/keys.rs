@@ -22,12 +22,12 @@ pub fn key_name(code: u16) -> String {
         0x68..=0x73 => return format!("F{}", code - 0x68 + 13),
         0x59..=0x61 => return format!("Num{}", code - 0x59 + 1),
         0x62 => "Num0",
-        0x28 => "Enter", 0x29 => "Esc", 0x2A => "Backspace", 0x2B => "Tab", 0x2C => "Espaço",
+        0x28 => "Enter", 0x29 => "Esc", 0x2A => "Backspace", 0x2B => "Tab", 0x2C => return tr!("key.space"),
         0x2D => "-", 0x2E => "=", 0x2F => "[", 0x30 => "]", 0x31 => "\\", 0x33 => ";", 0x34 => "'",
         0x35 => "`", 0x36 => ",", 0x37 => ".", 0x38 => "/", 0x39 => "CapsLock",
         0x46 => "PrintScreen", 0x47 => "ScrollLock", 0x48 => "Pause", 0x49 => "Insert",
         0x4A => "Home", 0x4B => "PageUp", 0x4C => "Delete", 0x4D => "End", 0x4E => "PageDown",
-        0x4F => "Direita", 0x50 => "Esquerda", 0x51 => "Baixo", 0x52 => "Cima",
+        0x4F => return tr!("key.right"), 0x50 => return tr!("key.left"), 0x51 => return tr!("key.down"), 0x52 => return tr!("key.up"),
         0x53 => "NumLock", 0x54 => "Num/", 0x55 => "Num*", 0x56 => "Num-", 0x57 => "Num+",
         0x58 => "NumEnter", 0x63 => "Num.", 0x64 => "\\|(ABNT)", 0x65 => "Menu", 0x87 => "/?(ABNT)",
         0xE0..=0xE7 => MODIFIERS[(code - 0xE0) as usize].1,
@@ -46,19 +46,19 @@ pub fn describe_keystroke(modifiers: u8, key: u8) -> String {
     if key != 0 {
         parts.push(key_name(key as u16));
     }
-    if parts.is_empty() { "(nenhuma tecla)".into() } else { parts.join(" + ") }
+    if parts.is_empty() { tr!("key.none") } else { parts.join(" + ") }
 }
 
-/// Consumer page (0x0C): mídia. (usage, nome, VK do Windows)
+/// Consumer page (0x0C): mídia. (usage, chave do nome, VK do Windows)
 pub const CONSUMER: [(u16, &str, u16); 12] = [
-    (0x00CD, "Play/Pause", 0xB3), (0x00B5, "Próxima faixa", 0xB0), (0x00B6, "Faixa anterior", 0xB1),
-    (0x00B7, "Parar", 0xB2), (0x00E9, "Volume +", 0xAF), (0x00EA, "Volume -", 0xAE),
-    (0x00E2, "Mudo", 0xAD), (0x0192, "Calculadora", 0xB7), (0x0194, "Explorador", 0xB6),
-    (0x0223, "Navegador: início", 0xAC), (0x0224, "Navegador: voltar", 0xA6), (0x0225, "Navegador: avançar", 0xA7),
+    (0x00CD, "media.play_pause", 0xB3), (0x00B5, "media.next", 0xB0), (0x00B6, "media.prev", 0xB1),
+    (0x00B7, "media.stop", 0xB2), (0x00E9, "media.vol_up", 0xAF), (0x00EA, "media.vol_down", 0xAE),
+    (0x00E2, "media.mute", 0xAD), (0x0192, "media.calculator", 0xB7), (0x0194, "media.explorer", 0xB6),
+    (0x0223, "media.browser_home", 0xAC), (0x0224, "media.browser_back", 0xA6), (0x0225, "media.browser_forward", 0xA7),
 ];
 
 pub fn consumer_name(code: u16) -> String {
-    CONSUMER.iter().find(|c| c.0 == code).map(|c| c.1.to_string()).unwrap_or(format!("0x{code:04x}"))
+    CONSUMER.iter().find(|c| c.0 == code).map(|c| tr!(c.1)).unwrap_or(format!("0x{code:04x}"))
 }
 
 pub fn consumer_vk(code: u16) -> Option<u16> {

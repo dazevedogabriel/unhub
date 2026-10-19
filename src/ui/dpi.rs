@@ -50,8 +50,8 @@ impl App {
         let g = ui.painter().layout_job(job);
         let gs = g.size();
         ui.painter().galley(t.left_top(), g, TEXT);
-        ui.painter().text(Pos2::new(t.left() + gs.x + 10.0, t.top() + gs.y - 10.0), Align2::LEFT_BOTTOM, "DPI atual", f(13.0), MUTED);
-        let range = format!("{lo} — {hi} · passos de {step} · até 5 níveis");
+        ui.painter().text(Pos2::new(t.left() + gs.x + 10.0, t.top() + gs.y - 10.0), Align2::LEFT_BOTTOM, tr!("dpi.current"), f(13.0), MUTED);
+        let range = tr!("dpi.range", lo = lo, hi = hi, step = step);
         ui.painter().text(Pos2::new(t.right(), t.top() + gs.y - 10.0), Align2::RIGHT_BOTTOM, range, mono(12.0), DIM);
         let rail = Rect::from_min_size(Pos2::new(t.left(), t.bottom() - 26.0), Vec2::new(t.width(), 6.0));
         ui.painter().rect_filled(rail, 3, INPUT);
@@ -85,7 +85,8 @@ impl App {
         let wcol = |i: usize| if cols_w[i] == 0.0 { flex } else { cols_w[i] };
         let head = Rect::from_min_size(table.min, Vec2::new(table.width(), 40.0));
         ui.painter().line_segment([head.left_bottom(), head.right_bottom()], Stroke::new(1.0, BORDER));
-        for (i, h) in ["ATIVO", "NÍVEL", "FAIXA", "DPI", "PADRÃO", "SHIFT"].iter().enumerate() {
+        let heads = [tr!("dpi.col_active"), tr!("dpi.col_level"), tr!("dpi.col_range"), "DPI".into(), tr!("dpi.col_default"), tr!("dpi.col_shift")];
+        for (i, h) in heads.iter().enumerate() {
             let centered = i >= 4;
             let x = if centered { xs[i] + wcol(i) / 2.0 } else { xs[i] };
             paint_caps(ui, Pos2::new(x, head.center().y), if centered { Align2::CENTER_CENTER } else { Align2::LEFT_CENTER }, h, DIM);
@@ -150,7 +151,7 @@ impl App {
             let bresp = ui.interact(br, ui.scope_id().with(("test", i)), Sense::click());
             let border = if in_use || bresp.hovered() { ACCENT } else { BORDER2 };
             ui.painter().rect(br, 7, eframe::egui::Color32::TRANSPARENT, Stroke::new(1.0, border), eframe::egui::StrokeKind::Inside);
-            ui.painter().text(br.center(), Align2::CENTER_CENTER, if in_use { "Em uso" } else { "Testar agora" }, f(12.0),
+            ui.painter().text(br.center(), Align2::CENTER_CENTER, tr!(if in_use { "dpi.in_use" } else { "dpi.test" }), f(12.0),
                 if in_use { ACCENT } else { TEXT2 });
             if bresp.on_hover_cursor(eframe::egui::CursorIcon::PointingHand).clicked() {
                 self.worker.send(Cmd::TestDpi(val));
@@ -159,7 +160,7 @@ impl App {
 
         // --- taxa de relatório -------------------------------------------------------------------
         let y = table.bottom() + 24.0;
-        let lr = paint_caps(ui, Pos2::new(area.left(), y + 18.0), Align2::LEFT_CENTER, "TAXA DE RELATÓRIO", DIM);
+        let lr = paint_caps(ui, Pos2::new(area.left(), y + 18.0), Align2::LEFT_CENTER, &tr!("dpi.rate"), DIM);
         let rates = [125u32, 250, 500, 1000];
         let cur = self.profile.as_ref().map(|p| p.report_rate_hz()).unwrap_or(1000);
         let labels: Vec<String> = rates.iter().map(|r| format!("{r} Hz")).collect();
@@ -176,8 +177,8 @@ impl App {
             }
         }
         let hx = lr.right() + 14.0 + 300.0 + 28.0;
-        let hint = "O botão de ciclo percorre os níveis ativos. Shift é o DPI usado enquanto um botão com “DPI shift (segurar)” estiver pressionado. Testar muda o DPI na hora, sem gravar.";
-        let g = ui.painter().layout(hint.into(), f(12.0), DIM, (area.right() - hx).max(200.0));
+        let hint = tr!("dpi.hint");
+        let g = ui.painter().layout(hint, f(12.0), DIM, (area.right() - hx).max(200.0));
         ui.painter().galley(Pos2::new(hx, y + 18.0 - g.size().y / 2.0), g, DIM);
 
         if commit {

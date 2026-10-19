@@ -108,13 +108,13 @@ pub struct ButtonInfo {
 /// fábrica mapeia G1..G5 para os botões 1..5 e G6 para o ciclo de DPI.
 pub fn button_names(pid: u16, count: usize) -> Vec<ButtonInfo> {
     let known: &[&str] = match pid {
-        0xC08F => &["Esquerdo", "Direito", "Meio (roda)", "Lateral traseiro", "Lateral dianteiro", "Botão de DPI"],
+        0xC08F => &["btn.left", "btn.right", "btn.middle", "btn.rear", "btn.front", "btn.dpi"],
         _ => &[],
     };
     (0..count)
         .map(|i| ButtonInfo {
             code: format!("G{}", i + 1),
-            name: known.get(i).map(|s| s.to_string()).unwrap_or(format!("Botão {}", i + 1)),
+            name: known.get(i).map(|k| tr!(*k)).unwrap_or_else(|| tr!("btn.n", n = i + 1)),
         })
         .collect()
 }
@@ -124,8 +124,8 @@ pub fn button_names(pid: u16, count: usize) -> Vec<ButtonInfo> {
 /// a interface mostra a Primária primeiro, como no layout.
 pub fn zones(pid: u16, count: usize) -> Vec<(usize, String)> {
     match pid {
-        0xC08F if count >= 2 => vec![(1, "Primária".into()), (0, "Logo".into())],
-        _ => (0..count).map(|i| (i, format!("Zona {}", i + 1))).collect(),
+        0xC08F if count >= 2 => vec![(1, tr!("zone.primary")), (0, tr!("zone.logo"))],
+        _ => (0..count).map(|i| (i, tr!("zone.n", n = i + 1))).collect(),
     }
 }
 

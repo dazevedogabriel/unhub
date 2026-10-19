@@ -7,11 +7,11 @@ use super::App;
 use crate::onboard::{LedEffect, FX_BREATH, FX_CYCLE, FX_FIXED, FX_OFF, LED_ZONES};
 use crate::util;
 
-const EFFECTS: [(u8, &str); 4] = [(FX_OFF, "Desligado"), (FX_FIXED, "Fixo"), (FX_BREATH, "Respiração"), (FX_CYCLE, "Ciclo de cores")];
+const EFFECTS: [(u8, &str); 4] = [(FX_OFF, "light.off"), (FX_FIXED, "light.fixed"), (FX_BREATH, "light.breath"), (FX_CYCLE, "light.cycle")];
 const SWATCHES: [u32; 6] = [0x00FF00, 0xC6F432, 0x00D1FF, 0x7A5CFF, 0xFF2D6F, 0xFFFFFF];
 
 fn effect_name(e: &LedEffect) -> String {
-    EFFECTS.iter().find(|x| x.0 == e.effect).map(|x| x.1.to_string()).unwrap_or(format!("Outro (0x{:02x})", e.effect))
+    EFFECTS.iter().find(|x| x.0 == e.effect).map(|x| tr!(x.1)).unwrap_or_else(|| tr!("light.other", code = format!("{:02x}", e.effect)))
 }
 
 impl App {
@@ -36,9 +36,9 @@ impl App {
         let sresp = ui.interact(sr, ui.scope_id().with("sync"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
         ui.painter().rect(sr, 12, CARD, Stroke::new(1.0, BORDER), egui::StrokeKind::Inside);
         ui.painter().text(Pos2::new(sr.left() + 18.0, sr.center().y - 2.0), Align2::LEFT_BOTTOM,
-            "Mesma configuração em todas as zonas", fm(14.0), TEXT);
+            tr!("light.sync"), fm(14.0), TEXT);
         ui.painter().text(Pos2::new(sr.left() + 18.0, sr.center().y + 2.0), Align2::LEFT_TOP,
-            format!("{} segue a {}", zones[1].1, zones[0].1), f(12.0), MUTED);
+            tr!("light.follows", zone = zones[1].1, main = zones[0].1), f(12.0), MUTED);
         paint_toggle(ui, Rect::from_center_size(Pos2::new(sr.right() - 36.0, sr.center().y), Vec2::new(36.0, 20.0)), self.sync_zones, sresp.hovered());
         if sresp.clicked() {
             self.sync_zones = !self.sync_zones;
@@ -62,10 +62,10 @@ impl App {
                 c.disable();
             }
             paint_card(&c, card);
-            animating |= self.zone_card(&mut c, card, z, name, e);
+            animating |= self.zone_card(&mut c, card, z, name, dev.pid == 0xC08F && z == 0, e);
         }
         ui.painter().text(Pos2::new(area.left(), top + 380.0 + 20.0), Align2::LEFT_TOP,
-            "Gravado na memória do mouse junto com o perfil. Zonas na ordem informada pelo mouse (feature 0x8070).",
+            tr!("light.note"),
             f(12.0), DIM);
         if animating {
             ui.ctx().request_repaint();
@@ -73,7 +73,7 @@ impl App {
     }
 
     /// Retorna true se a prévia está animando.
-    fn zone_card(&mut self, ui: &mut Ui, card: Rect, z: usize, name: &str, e: LedEffect) -> bool {
+    fn zone_card(&mut self, ui: &mut Ui, card: Rect, z: usize, name: &str, logo: bool, e: LedEffect) -> bool {
         let mut new = e;
         // prévia
         let pv = Rect::from_min_size(card.min, Vec2::new(card.width(), 150.0));
@@ -82,7 +82,7 @@ impl App {
             p.rect_filled(pv.shrink(1.0), egui::CornerRadius { nw: 13, ne: 13, sw: 0, se: 0 }, hex(0x0B0C0E));
             p.line_segment([pv.left_bottom(), pv.right_bottom()], Stroke::new(1.0, BORDER));
         }
-        paint_caps(ui, Pos2::new(pv.left() + 16.0, pv.top() + 14.0), Align2::LEFT_TOP, "ZONA", DIM);
+        paint_caps(ui, Pos2::new(pv.left() + 16.0, pv.top() + 14.0), Align2::LEFT_TOP, &tr!("light.zone"), DIM);
         ui.painter().text(Pos2::new(pv.left() + 16.0, pv.top() + 28.0), Align2::LEFT_TOP, name, fm(18.0), TEXT);
         ui.painter().text(Pos2::new(pv.right() - 16.0, pv.top() + 14.0), Align2::RIGHT_TOP, effect_name(&e), mono(11.0), MUTED);
         let t = self.started.elapsed().as_secs_f32();
@@ -98,7 +98,6 @@ impl App {
             FX_CYCLE => (hsv(t / period, 1.0, 1.0), e.brightness as f32 / 100.0, true),
             _ => (CHIP, 1.0, false),
         };
-        let logo = name == "Logo";
         let shape = if logo { Vec2::new(54.0, 54.0) } else { Vec2::new(120.0, 10.0) };
         let radius = if logo { 16.0 } else { 5.0 };
         let sr = Rect::from_center_size(pv.center() + Vec2::new(0.0, 10.0), shape);
@@ -121,7 +120,7 @@ impl App {
 
         // efeito
         let r0 = row(0);
-        ui.painter().text(Pos2::new(r0.left(), r0.center().y), Align2::LEFT_CENTER, "Efeito", f(13.0), MUTED);
+        ui.painter().text(Pos2::new(r0.left(), r0.center().y), Align2::LEFT_CENTER, tr!("light.effect"), f(13.0), MUTED);
         {
             let mut c = child(ui, Rect::from_min_size(Pos2::new(ctrl_x, r0.top()), Vec2::new(ctrl_w, 36.0)));
             c.spacing_mut().button_padding = Vec2::new(10.0, 8.0);
@@ -131,7 +130,7 @@ impl App {
                 .selected_text(egui::RichText::new(effect_name(&e)).font(fm(13.0)).color(TEXT))
                 .show_ui(&mut c, |ui| {
                     for (id, label) in EFFECTS {
-                        ui.selectable_value(&mut cur, id, egui::RichText::new(label).font(f(13.0)));
+                        ui.selectable_value(&mut cur, id, egui::RichText::new(tr!(label)).font(f(13.0)));
                     }
                 });
             if cur != e.effect {
@@ -154,7 +153,7 @@ impl App {
                 c.set_opacity(0.35);
                 c.disable();
             }
-            c.painter().text(Pos2::new(r1.left(), r1.center().y), Align2::LEFT_CENTER, "Cor", f(13.0), MUTED);
+            c.painter().text(Pos2::new(r1.left(), r1.center().y), Align2::LEFT_CENTER, tr!("light.color"), f(13.0), MUTED);
             let mut x = ctrl_x;
             for sw in SWATCHES {
                 let col = hex(sw);
@@ -187,7 +186,7 @@ impl App {
         }
 
         // ciclo e brilho
-        for (k, label) in [(2usize, "Ciclo"), (3, "Brilho")] {
+        for (k, label) in [(2usize, tr!("light.speed")), (3, tr!("light.brightness"))] {
             let r = row(k);
             let mut c = child(ui, r);
             if !uses_period {

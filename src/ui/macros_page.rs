@@ -106,7 +106,8 @@ impl App {
         for (i, b) in names.iter().enumerate() {
             for g in [false, true] {
                 if self.cfg.macro_on_button(d.pid, p, i, g).map(|m| m.id == id).unwrap_or(false) {
-                    out.push(format!("{} {}{}", b.code, b.name, if g { " (G-Shift)" } else { "" }));
+                    let label = format!("{} {}", b.code, b.name);
+                    out.push(if g { tr!("buttons.gshift_suffix", button = label) } else { label });
                 }
             }
         }
@@ -118,11 +119,11 @@ impl App {
         let path = if default.exists() {
             Some(default)
         } else {
-            rfd::FileDialog::new().set_title("settings.db do G HUB").add_filter("settings.db", &["db"]).pick_file()
+            rfd::FileDialog::new().set_title(tr!("macros.ghub_file")).add_filter("settings.db", &["db"]).pick_file()
         };
         let Some(path) = path else { return };
         match macros::import_from_ghub(&path) {
-            Err(e) => self.flash_err(format!("Não foi possível ler o G HUB: {e}")),
+            Err(e) => self.flash_err(tr!("macros.import_failed", error = e)),
             Ok((found, warnings)) => {
                 let existing: HashSet<String> = self.cfg.macros.iter().map(|m| m.name.clone()).collect();
                 let total = found.len();
@@ -134,20 +135,20 @@ impl App {
                     self.select_macro(self.sel_macro);
                     self.cfg_changed();
                 }
-                let mut body = format!("{added} macro(s) importada(s).");
+                let mut body = tr_n!("macros.imported", added);
                 if total > added {
-                    body += &format!(" {} já existiam e foram ignoradas.", total - added);
+                    body += &format!(" {}", tr_n!("macros.import_skipped", total - added));
                 }
                 if total == 0 {
-                    body = "Nenhuma macro criada por você foi encontrada no G HUB.".into();
+                    body = tr!("macros.import_none");
                 }
                 let mut w: Vec<String> = warnings.into_iter().collect::<HashSet<_>>().into_iter().collect();
                 w.sort();
                 if !w.is_empty() {
-                    body += "\n\nAvisos:\n";
+                    body += &format!("\n\n{}\n", tr!("macros.import_warnings"));
                     body += &w.into_iter().take(8).collect::<Vec<_>>().join("\n");
                 }
-                self.dialog = Some(Dialog::Info { title: "Importar do G HUB".into(), body });
+                self.dialog = Some(Dialog::Info { title: tr!("macros.import"), body });
             }
         }
     }
@@ -208,9 +209,9 @@ impl App {
         paint_card(ui, ed);
         if self.cfg.macros.is_empty() {
             let c = ed.center();
-            ui.painter().text(Pos2::new(c.x, c.y - 12.0), Align2::CENTER_CENTER, "Nenhuma macro ainda", fm(17.0), TEXT);
+            ui.painter().text(Pos2::new(c.x, c.y - 12.0), Align2::CENTER_CENTER, tr!("macros.empty_title"), fm(17.0), TEXT);
             ui.painter().text(Pos2::new(c.x, c.y + 14.0), Align2::CENTER_CENTER,
-                "Crie uma em “+ Nova” ou importe as suas do G HUB.", f(13.0), MUTED);
+                tr!("macros.empty_body"), f(13.0), MUTED);
             return;
         }
         self.editor(ui, ed);
@@ -220,13 +221,13 @@ impl App {
         paint_card(ui, r);
         let head = Rect::from_min_size(r.min, Vec2::new(r.width(), 46.0));
         ui.painter().line_segment([head.left_bottom(), head.right_bottom()], Stroke::new(1.0, BORDER));
-        paint_caps(ui, Pos2::new(head.left() + 16.0, head.center().y), Align2::LEFT_CENTER, "BIBLIOTECA", DIM);
+        paint_caps(ui, Pos2::new(head.left() + 16.0, head.center().y), Align2::LEFT_CENTER, &tr!("macros.library"), DIM);
         let nr = Rect::from_min_size(Pos2::new(head.right() - 66.0, head.top() + 10.0), Vec2::new(54.0, 26.0));
         let nresp = ui.interact(nr, ui.scope_id().with("newmacro"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
-        ui.painter().text(Pos2::new(nr.right(), nr.center().y), Align2::RIGHT_CENTER, "+ Nova", fb(12.0),
+        ui.painter().text(Pos2::new(nr.right(), nr.center().y), Align2::RIGHT_CENTER, tr!("macros.new"), fb(12.0),
             if nresp.hovered() { ACCENT_HI } else { ACCENT });
         if nresp.clicked() {
-            let name = self.cfg.unique_name("Nova macro");
+            let name = self.cfg.unique_name(&tr!("macro.new_name"));
             self.cfg.macros.push(Macro::new(&name, MacroType::Simple));
             self.select_macro(self.cfg.macros.len() - 1);
             self.cfg_changed();
@@ -269,7 +270,7 @@ impl App {
         if !has {
             c1.disable();
         }
-        if button_sized(&mut c1, "Duplicar", Btn::Outline, Some(half), 12.0).clicked() {
+        if button_sized(&mut c1, &tr!("macros.duplicate"), Btn::Outline, Some(half), 12.0).clicked() {
             if let Some(m) = self.cfg.macros.get(self.sel_macro) {
                 let d = m.duplicate();
                 self.cfg.macros.push(d);
@@ -281,18 +282,18 @@ impl App {
         if !has {
             c2.disable();
         }
-        if button_sized(&mut c2, "Excluir", Btn::Danger, Some(half), 12.0).clicked() {
+        if button_sized(&mut c2, &tr!("macros.delete"), Btn::Danger, Some(half), 12.0).clicked() {
             if let Some(m) = self.cfg.macros.get(self.sel_macro) {
                 let users = self.buttons_using(&m.id);
-                let mut body = format!("Excluir a macro “{}”?", m.name);
+                let mut body = tr!("confirm.delete_body", name = m.name);
                 if !users.is_empty() {
-                    body += &format!("\n\nEla está atribuída a: {}. Esses botões voltarão ao padrão (aplique para gravar).", users.join(", "));
+                    body += &format!("\n\n{}", tr!("confirm.delete_used", buttons = users.join(", ")));
                 }
-                self.dialog = Some(Dialog::confirm("Excluir macro", &body, "Excluir", true, Pending::DeleteMacro(m.id.clone())));
+                self.dialog = Some(Dialog::confirm(&tr!("confirm.delete_title"), &body, &tr!("macros.delete"), true, Pending::DeleteMacro(m.id.clone())));
             }
         }
         let mut c3 = child(ui, Rect::from_min_size(Pos2::new(f.left(), f.top() + 40.0), Vec2::new(f.width(), 34.0)));
-        if button_sized(&mut c3, "Importar do G HUB", Btn::Dashed, Some(f.width()), 12.0).clicked() {
+        if button_sized(&mut c3, &tr!("macros.import"), Btn::Dashed, Some(f.width()), 12.0).clicked() {
             self.import_ghub();
         }
     }
@@ -317,7 +318,7 @@ impl App {
         let (type_w, delay_w, gap) = (260.0, 200.0, 14.0);
         let name_w = t.width() - type_w - delay_w - 2.0 * gap;
         let mut x = t.left();
-        paint_caps(ui, Pos2::new(x, t.top()), Align2::LEFT_TOP, "NOME", DIM);
+        paint_caps(ui, Pos2::new(x, t.top()), Align2::LEFT_TOP, &tr!("macros.name"), DIM);
         {
             let mut c = child(ui, Rect::from_min_size(Pos2::new(x, t.top() + 18.0), Vec2::new(name_w, 36.0)));
             let resp = c.add_sized(Vec2::new(name_w, 36.0),
@@ -326,11 +327,11 @@ impl App {
                 changed = true;
             }
             if resp.lost_focus() && m.name.trim().is_empty() {
-                m.name = "Macro".into();
+                m.name = tr!("macro.default_name");
             }
         }
         x += name_w + gap;
-        paint_caps(ui, Pos2::new(x, t.top()), Align2::LEFT_TOP, "TIPO", DIM);
+        paint_caps(ui, Pos2::new(x, t.top()), Align2::LEFT_TOP, &tr!("macros.type"), DIM);
         {
             let mut c = child(ui, Rect::from_min_size(Pos2::new(x, t.top() + 18.0), Vec2::new(type_w, 36.0)));
             let mut kind = m.kind;
@@ -353,7 +354,7 @@ impl App {
             let tr = Rect::from_min_size(Pos2::new(x, t.top() - 1.0), Vec2::new(delay_w, 16.0));
             let resp = ui.interact(tr, ui.scope_id().with("delaytoggle"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
             paint_toggle(ui, Rect::from_min_size(tr.min, Vec2::new(26.0, 16.0)), m.use_default_delay, resp.hovered());
-            paint_caps(ui, Pos2::new(tr.left() + 34.0, tr.center().y), Align2::LEFT_CENTER, "ATRASO PADRÃO", DIM);
+            paint_caps(ui, Pos2::new(tr.left() + 34.0, tr.center().y), Align2::LEFT_CENTER, &tr!("macros.default_delay"), DIM);
             if resp.clicked() {
                 m.use_default_delay = !m.use_default_delay;
                 changed = true;
@@ -371,7 +372,7 @@ impl App {
         let bar = Rect::from_min_size(Pos2::new(r.left() + 18.0, top.bottom() + 14.0), Vec2::new(r.width() - 36.0, 40.0));
         let (title, desc) = m.kind.info();
         ui.painter().text(bar.left_top(), Align2::LEFT_TOP, title, fm(14.0), TEXT);
-        let rec_label = if recording { format!("Gravando… {rec_count} · parar") } else { "Gravar teclas".to_string() };
+        let rec_label = if recording { tr!("macros.recording", n = rec_count) } else { tr!("macros.record") };
         let rw = text_size(ui, &rec_label, fm(13.0)).x + 44.0;
         let rr = Rect::from_min_size(Pos2::new(bar.right() - rw, bar.top() + 2.0), Vec2::new(rw, 34.0));
         let rresp = ui.interact(rr, ui.scope_id().with("rec"), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
@@ -392,12 +393,12 @@ impl App {
 
         // gravar atrasos reais (ao lado do botão de gravar)
         let mut toggle_real = false;
-        let cb_w = text_size(ui, "atrasos reais", f(12.0)).x + 22.0;
+        let cb_w = text_size(ui, &tr!("macros.real_delays"), f(12.0)).x + 22.0;
         let mut right_edge = rr.left() - 14.0 - cb_w;
         {
             let mut c = child(ui, Rect::from_min_size(Pos2::new(right_edge, rr.top()), Vec2::new(cb_w, rr.height())));
             c.horizontal_centered(|ui| {
-                if checkbox(ui, real_delays, "atrasos reais").on_hover_text("Grava também o tempo entre as teclas").clicked() {
+                if checkbox(ui, real_delays, &tr!("macros.real_delays")).on_hover_text(tr!("macros.real_delays_tip")).clicked() {
                     toggle_real = true;
                 }
             });
@@ -418,7 +419,7 @@ impl App {
                 new_list = Some(lists[i]);
             }
         }
-        paint_text(ui, Pos2::new(bar.left(), bar.top() + 20.0), Align2::LEFT_TOP, desc, f(12.0), MUTED, right_edge - bar.left() - 16.0);
+        paint_text(ui, Pos2::new(bar.left(), bar.top() + 20.0), Align2::LEFT_TOP, &desc, f(12.0), MUTED, right_edge - bar.left() - 16.0);
 
         // --- passos ---------------------------------------------------------------------------
         let foot = Rect::from_min_max(Pos2::new(r.left(), r.bottom() - 60.0), r.max);
@@ -434,7 +435,7 @@ impl App {
             if steps.is_empty() {
                 let (er, _) = ui.allocate_exact_size(Vec2::new(list_r.width(), 96.0), Sense::hover());
                 dashed_rect(ui, er.shrink(1.0), BORDER2);
-                ui.painter().text(er.center(), Align2::CENTER_CENTER, "Nenhuma ação. Adicione abaixo ou grave.", f(13.0), DIM);
+                ui.painter().text(er.center(), Align2::CENTER_CENTER, tr!("macros.no_steps"), f(13.0), DIM);
             }
             for (i, s) in steps.iter().enumerate() {
                 let (row, resp) = ui.allocate_exact_size(Vec2::new(list_r.width(), 44.0), Sense::click());
@@ -528,10 +529,10 @@ impl App {
             let mut c = child(ui, fr);
             c.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing.x = 6.0;
-                caps(ui, "ADICIONAR");
+                caps(ui, &tr!("macros.add"));
                 ui.add_space(6.0);
                 for (k, label) in StepKind::ADD {
-                    if add_chip(ui, label).clicked() {
+                    if add_chip(ui, &tr!(label)).clicked() {
                         add = Some(k);
                     }
                 }

@@ -36,8 +36,8 @@ pub enum StepKind {
 
 impl StepKind {
     pub const ADD: [(StepKind, &'static str); 7] = [
-        (StepKind::Key, "Tecla"), (StepKind::Text, "Texto"), (StepKind::Click, "Clique"), (StepKind::Wheel, "Rolagem"),
-        (StepKind::Delay, "Atraso"), (StepKind::Media, "Mídia"), (StepKind::Launch, "Programa"),
+        (StepKind::Key, "steps.key"), (StepKind::Text, "steps.text"), (StepKind::Click, "steps.click"), (StepKind::Wheel, "steps.wheel"),
+        (StepKind::Delay, "steps.delay"), (StepKind::Media, "steps.media"), (StepKind::Launch, "steps.launch"),
     ];
 }
 
@@ -116,17 +116,17 @@ impl StepDialog {
         d
     }
 
-    fn title(&self) -> &'static str {
+    fn title(&self) -> String {
         let edit = self.editing.is_some();
-        match self.kind {
-            StepKind::Key => if edit { "Trocar tecla" } else { "Adicionar tecla" },
-            StepKind::Text => "Texto a digitar",
-            StepKind::Click => "Clique do mouse",
-            StepKind::Wheel => "Rolagem",
-            StepKind::Delay => "Atraso",
-            StepKind::Media => "Mídia",
-            StepKind::Launch => "Abrir programa",
-        }
+        tr!(match self.kind {
+            StepKind::Key => if edit { "stepdlg.key_edit" } else { "stepdlg.key_add" },
+            StepKind::Text => "stepdlg.text",
+            StepKind::Click => "stepdlg.click",
+            StepKind::Wheel => "steps.wheel",
+            StepKind::Delay => "steps.delay",
+            StepKind::Media => "steps.media",
+            StepKind::Launch => "stepdlg.launch",
+        })
     }
 
     /// Passos resultantes, ou None se ainda incompleto.
@@ -221,7 +221,7 @@ fn footer(ui: &mut Ui, ok: &str, danger: bool, ok_enabled: bool) -> Outcome {
         }
         let w = resp.rect.width() + 8.0;
         ui.add_space(w);
-        if button(ui, "Cancelar", Btn::Outline).clicked() {
+        if button(ui, &tr!("dialog.cancel"), Btn::Outline).clicked() {
             out = Outcome::Cancel;
         }
     });
@@ -250,7 +250,7 @@ impl App {
                     ui.label(egui::RichText::new(body.as_str()).font(f(13.0)).color(MUTED));
                     ui.add_space(14.0);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if button(ui, "OK", Btn::Primary).clicked() {
+                        if button(ui, &tr!("dialog.ok"), Btn::Primary).clicked() {
                             outcome = Outcome::Cancel;
                         }
                     });
@@ -259,8 +259,8 @@ impl App {
                     ui.label(egui::RichText::new(d.title()).font(fm(17.0)).color(TEXT));
                     ui.add_space(10.0);
                     step_body(ui, d, ctx);
-                    let ok = if d.editing.is_some() { "Salvar" } else { "Adicionar" };
-                    outcome = footer(ui, ok, false, d.result().is_some());
+                    let ok = tr!(if d.editing.is_some() { "dialog.save" } else { "dialog.add" });
+                    outcome = footer(ui, &ok, false, d.result().is_some());
                 }
             }
         });
@@ -365,12 +365,12 @@ fn step_body(ui: &mut Ui, d: &mut StepDialog, ctx: &egui::Context) {
     match d.kind {
         StepKind::Key => {
             let text = if d.editing.is_some() {
-                if d.single_key == 0 { "(nenhuma)".into() } else { keys::key_name(d.single_key) }
+                if d.single_key == 0 { tr!("key.none") } else { keys::key_name(d.single_key) }
             } else {
                 keys::describe_keystroke(d.combo.mods, d.combo.key)
             };
             let active = d.cap.is_some();
-            let resp = capture_box(ui, &text, active, "Pressione a tecla…");
+            let resp = capture_box(ui, &text, active, &tr!("stepdlg.press_key"));
             if resp.clicked() {
                 if d.cap.is_none() {
                     d.combo = ComboBuilder::default();
@@ -379,27 +379,23 @@ fn step_body(ui: &mut Ui, d: &mut StepDialog, ctx: &egui::Context) {
                     d.cap = None;
                 }
             }
-            let hint = if d.editing.is_some() {
-                "Clique na caixa e pressione a nova tecla. O sentido (pressionar/soltar) é mantido."
-            } else {
-                "Clique na caixa e pressione a tecla ou combinação. Adiciona pressionar e soltar; modificadores envolvem a tecla."
-            };
+            let hint = tr!(if d.editing.is_some() { "stepdlg.key_hint_edit" } else { "stepdlg.key_hint" });
             ui.label(egui::RichText::new(hint).font(f(12.0)).color(DIM));
             if d.editing.is_some() {
                 ui.horizontal(|ui| {
-                    if chip(ui, "↓ Pressionar", d.down).clicked() { d.down = true; }
-                    if chip(ui, "↑ Soltar", !d.down).clicked() { d.down = false; }
+                    if chip(ui, &tr!("stepdlg.down"), d.down).clicked() { d.down = true; }
+                    if chip(ui, &tr!("stepdlg.up"), !d.down).clicked() { d.down = false; }
                 });
             }
         }
         StepKind::Text => {
-            label(ui, "TEXTO");
+            label(ui, &tr!("stepdlg.text_label"));
             ui.add(egui::TextEdit::multiline(&mut d.text).desired_rows(4).desired_width(f32::INFINITY)
                 .font(f(14.0)).frame(input_frame()));
-            ui.label(egui::RichText::new("Digitado como Unicode — funciona com acentos e emoji. Quebras de linha viram Enter.").font(f(12.0)).color(DIM));
+            ui.label(egui::RichText::new(tr!("stepdlg.text_hint")).font(f(12.0)).color(DIM));
         }
         StepKind::Click => {
-            label(ui, "BOTÃO");
+            label(ui, &tr!("stepdlg.button"));
             ui.horizontal_wrapped(|ui| {
                 for b in 1..=5u8 {
                     if chip(ui, &mouse_button_name(b), d.button == b).clicked() {
@@ -408,29 +404,29 @@ fn step_body(ui: &mut Ui, d: &mut StepDialog, ctx: &egui::Context) {
                 }
             });
             if d.editing.is_some() {
-                label(ui, "SENTIDO");
+                label(ui, &tr!("stepdlg.sense"));
                 ui.horizontal(|ui| {
-                    if chip(ui, "↓ Pressionar", d.down).clicked() { d.down = true; }
-                    if chip(ui, "↑ Soltar", !d.down).clicked() { d.down = false; }
+                    if chip(ui, &tr!("stepdlg.down"), d.down).clicked() { d.down = true; }
+                    if chip(ui, &tr!("stepdlg.up"), !d.down).clicked() { d.down = false; }
                 });
             } else {
-                ui.label(egui::RichText::new("Adiciona pressionar e soltar.").font(f(12.0)).color(DIM));
+                ui.label(egui::RichText::new(tr!("stepdlg.click_hint")).font(f(12.0)).color(DIM));
             }
         }
         StepKind::Wheel => {
-            label(ui, "DIREÇÃO");
+            label(ui, &tr!("stepdlg.direction"));
             ui.horizontal_wrapped(|ui| {
                 for dir in WheelDir::ALL {
-                    if chip(ui, dir.label(), d.dir == dir).clicked() {
+                    if chip(ui, &dir.label(), d.dir == dir).clicked() {
                         d.dir = dir;
                     }
                 }
             });
-            label(ui, "PASSOS");
+            label(ui, &tr!("stepdlg.amount"));
             num_edit(ui, "amount", &mut d.amount, 1, 100, 1, 120.0, None);
         }
         StepKind::Delay => {
-            label(ui, "DURAÇÃO");
+            label(ui, &tr!("stepdlg.duration"));
             num_edit(ui, "ms", &mut d.ms, 0, 600_000, 1, 160.0, Some("ms"));
             ui.horizontal_wrapped(|ui| {
                 for v in [10u32, 25, 50, 100, 250, 500, 1000] {
@@ -441,32 +437,32 @@ fn step_body(ui: &mut Ui, d: &mut StepDialog, ctx: &egui::Context) {
             });
         }
         StepKind::Media => {
-            label(ui, "AÇÃO");
+            label(ui, &tr!("stepdlg.action"));
             ui.horizontal_wrapped(|ui| {
                 for (code, name, _) in keys::CONSUMER {
-                    if chip(ui, name, d.media == code).clicked() {
+                    if chip(ui, &tr!(name), d.media == code).clicked() {
                         d.media = code;
                     }
                 }
             });
         }
         StepKind::Launch => {
-            label(ui, "PROGRAMA");
+            label(ui, &tr!("stepdlg.program"));
             ui.horizontal(|ui| {
                 let w = ui.available_width() - 96.0;
                 ui.add_sized(Vec2::new(w, 34.0), egui::TextEdit::singleline(&mut d.path).font(f(13.0)).frame(input_frame())
-                    .hint_text("C:\\caminho\\programa.exe"));
-                if button(ui, "Procurar…", Btn::Outline).clicked() {
+                    .hint_text(tr!("stepdlg.path_hint")));
+                if button(ui, &tr!("stepdlg.browse"), Btn::Outline).clicked() {
                     if let Some(p) = rfd::FileDialog::new()
-                        .add_filter("Programas", &["exe", "bat", "cmd", "lnk"])
-                        .add_filter("Todos", &["*"])
+                        .add_filter(tr!("stepdlg.filter_programs"), &["exe", "bat", "cmd", "lnk"])
+                        .add_filter(tr!("stepdlg.filter_all"), &["*"])
                         .pick_file()
                     {
                         d.path = p.display().to_string();
                     }
                 }
             });
-            label(ui, "ARGUMENTOS (OPCIONAL)");
+            label(ui, &tr!("stepdlg.args"));
             ui.add(egui::TextEdit::singleline(&mut d.args).font(f(13.0)).frame(input_frame()).desired_width(f32::INFINITY));
         }
     }
